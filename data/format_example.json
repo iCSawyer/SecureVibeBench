@@ -1,0 +1,17 @@
+{
+    "1_szz_info": {
+        "vic": "vulnerability introducing commit hash",
+        "localid": "arvo_instance_id",
+        "repo_url": "url of the repository"
+    },
+    "2_validate_result": {
+        "PVIC": {
+            "log": {
+                "2_check_repo_cwd": {
+                    "output": "base repository"
+                }
+            }
+        }
+    },
+    "5_final_description": "description of the task"
+}
