@@ -1,6 +1,7 @@
-# [ACL 2026 Main] SecureVibeBench: First Benchmark for Secure Vibe Coding of Agents
+# SecureVibeBench: First Benchmark for Secure Vibe Coding of Agents
 
 <p align="left">
+    <a href="https://2026.aclweb.org/"><img src="https://img.shields.io/badge/Venue-ACL%202026%20Main-2ea44f.svg?style=for-the-badge" alt="Venue: ACL 2026 Main"></a>
     <a href="https://arxiv.org/abs/2509.22097v2"><img src="https://img.shields.io/badge/arXiv-2509.22097-b31b1b.svg?style=for-the-badge" alt="arXiv"></a>
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License MIT"></a>
     <a href=""><img src="https://img.shields.io/badge/Leaderboard-TBD-orange.svg?style=for-the-badge" alt="Leaderboard"></a>
@@ -19,7 +20,7 @@
 ## ✨ News
 
 - **[2026-04-11]** 🚀 We released code and data for SecureVibeBench.
-* **[2026-04-07]** 🎉 Our paper has been accepted to ACL 2026 Main Conference.
+* **[2026-04-07]** 🎉 Our paper has been accepted to **ACL 2026 Main Conference** and recommended as **Oral** presentation.
 
 
 <a id="nav-overview"></a>
