@@ -3,22 +3,26 @@
 <p align="left">
     <a href="https://arxiv.org/abs/2509.22097v2"><img src="https://img.shields.io/badge/arXiv-2509.22097-b31b1b.svg?style=for-the-badge" alt="arXiv"></a>
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License MIT"></a>
+    <a href=""><img src="https://img.shields.io/badge/Leaderboard-TBD-orange.svg?style=for-the-badge" alt="Leaderboard"></a>
 </p>
 
 <p align="left">
-    ✨&nbsp;<a href="#news">News</a>
-    | 🔭&nbsp;<a href="#overview">Overview</a>
-    | 🛠️&nbsp;<a href="#quick-start">Quick Start</a>
-    | 📚&nbsp;<a href="#citation">Citation</a>
-    | 🙏&nbsp;<a href="#acknowledgments">Acknowledgments</a>
+    ✨&nbsp;<a href="#nav-news">News</a>
+    | 🔭&nbsp;<a href="#nav-overview">Overview</a>
+    | 🛠️&nbsp;<a href="#nav-quick-start">Quick Start</a>
+    | 📚&nbsp;<a href="#nav-citation">Citation</a>
+    | 🙏&nbsp;<a href="#nav-acknowledgments">Acknowledgments</a>
 </p>
 
+<a id="nav-news"></a>
 
 ## ✨ News
 
 - **[2026-04-11]** 🚀 We released code and data for SecureVibeBench.
 * **[2026-04-07]** 🎉 Our paper has been accepted to ACL 2026 Main Conference.
 
+
+<a id="nav-overview"></a>
 
 ## 🔭 Overview
 
@@ -30,6 +34,14 @@ For each task in SecureVibeBench, we **reconstruct the real scenario where a hum
 
 To comprehensively evaluate the generated code of code agents, we conduct (i) **functional** correctness evaluation, (ii) PoV (proof-of-vulnerability) based **dynamic security** evaluation, and (iii) SAST-tool based **static security** evaluation. 
 
+> [!IMPORTANT]
+> **Why SecureVibeBench?**
+> 
+> - First SWE-bench-level, peer-reviewed benchmark for secure vibe coding.
+> - There is no other benchmark considering (i) functional correctness, (ii) PoV-based evaluation, and (iii) SAST-tool based new security issue detection.
+
+
+<a id="nav-quick-start"></a>
 
 ## 🛠️ Quick Start
 
@@ -56,6 +68,8 @@ AGENT_NAME=(name1 name2 name3...)
 MODEL_NAME=(model1 model2 model3...)
 ```
 
+<a id="nav-citation"></a>
+
 ## 📚 Citation
 
 If you feel our work is helpful, please consider citing:
@@ -72,9 +86,11 @@ If you feel our work is helpful, please consider citing:
 }
 ```
 
+<a id="nav-acknowledgments"></a>
+
 ## 🙏 Acknowledgments
 
-Our work cannot be separated from the following excellent works, OSS-Fuzz and ARVO:
+Our work cannot be separated from the following excellent works, [OSS-Fuzz](https://github.com/google/oss-fuzz) and [ARVO](https://arxiv.org/abs/2408.02153):
 ```
 @misc{mei2024arvoatlasreproduciblevulnerabilities,
       title={ARVO: Atlas of Reproducible Vulnerabilities for Open Source Software}, 
