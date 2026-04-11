@@ -1,0 +1,49 @@
+FROM ${IMAGE_NAME}
+
+# Remove direct mesg calls
+RUN find /etc /root /home -type f \( -name ".profile" -o -name ".bashrc" -o -name "bash.bashrc" -o -name "profile" \) -exec sed -i '/^\s*mesg\s\+n/d' {} + || true
+
+ENV CONDA_DIR=/opt/conda \
+    PATH=/opt/conda/bin:$PATH
+
+# ---------------------------------------------------------
+# Install Miniconda
+# ---------------------------------------------------------
+RUN apt-get update && apt-get install -y wget git bzip2 && \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh && \
+    bash /tmp/miniconda.sh -b -p $CONDA_DIR && \
+    rm /tmp/miniconda.sh && \
+    conda init bash && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Configure conda and accept ToS
+RUN conda config --set always_yes yes && \
+    conda config --add channels defaults && \
+    conda config --add channels conda-forge && \
+    conda config --set channel_priority flexible && \
+    conda tos accept --channel https://repo.anaconda.com/pkgs/main && \
+    conda tos accept --channel https://repo.anaconda.com/pkgs/r
+
+# ---------------------------------------------------------
+# Create CODEX ENV (Node.js)
+# ---------------------------------------------------------
+RUN conda create -n codex_env nodejs=18 -c conda-forge
+
+# Auto activate this env for root
+RUN echo "conda activate codex_env" >> /root/.bashrc
+
+# ---------------------------------------------------------
+# Install OpenAI Codex (Node version)
+# ---------------------------------------------------------
+RUN conda run -n codex_env npm install -g @openai/codex
+
+# Ensure the "codex" CLI is reachable for all users
+ENV PATH=/opt/conda/envs/codex_env/bin:$PATH
+
+# ---------------------------------------------------------
+# Add non-root user `agent` (like before)
+# ---------------------------------------------------------
+RUN useradd -m -s /bin/bash agent
+
+# Default to bash
+CMD ["/bin/bash"]

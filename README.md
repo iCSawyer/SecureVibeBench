@@ -60,13 +60,13 @@ Then, to evaluate one agent supported by a backbone LLM, you can run the followi
 ```
 cd evaluation/
 bash run.sh <AGENT_NAME> <MODEL_NAME> <INSTANCE_ID> # run a single instance
-bash run.sh <AGENT_NAME> <MODEL_NAME> ALL # run all instances of SecureVibeBench
+bash run.sh <AGENT_NAME> <MODEL_NAME> ALL            # run all instances of SecureVibeBench
 ```
 
-This is the current available agents and models:
+Currently available agents and models:
 ```
-AGENT_NAME=(name1 name2 name3...)
-MODEL_NAME=(model1 model2 model3...)
+AGENT_NAME=(aider openhands sweagent claudecode codex)
+MODEL_NAME=(claude-3-7-sonnet-20250219 claude-sonnet-4-5-20250929 gpt-4o gpt-5-2025-08-07 deepseek-chat)
 ```
 
 <a id="nav-citation"></a>

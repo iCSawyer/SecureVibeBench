@@ -1,0 +1,42 @@
+FROM ${IMAGE_NAME}
+
+# Remove direct mesg calls
+RUN find /etc /root /home -type f \( -name ".profile" -o -name ".bashrc" -o -name "bash.bashrc" -o -name "profile" \) -exec sed -i '/^\s*mesg\s\+n/d' {} + || true
+
+ENV CONDA_DIR=/opt/conda \
+    PATH=/opt/conda/bin:$PATH
+
+# Install dependencies and Miniconda
+RUN apt-get update && apt-get install -y wget git bzip2 && \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh && \
+    bash /tmp/miniconda.sh -b -p $CONDA_DIR && \
+    rm /tmp/miniconda.sh && \
+    conda init bash && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Configure conda and accept ToS
+RUN conda config --set always_yes yes && \
+    conda config --add channels defaults && \
+    conda config --add channels conda-forge && \
+    conda config --set channel_priority flexible && \
+    conda tos accept --channel https://repo.anaconda.com/pkgs/main && \
+    conda tos accept --channel https://repo.anaconda.com/pkgs/r
+
+# --- Claude Code setup ---
+
+# Create conda environment with nodejs
+RUN conda create -n claude_env nodejs -c conda-forge
+
+# Auto-activate the 'claude_env' in bash (for root)
+RUN echo "conda activate claude_env" >> /root/.bashrc
+
+# Install the Claude Code CLI
+RUN conda run -n claude_env npm install -g @anthropic-ai/claude-code
+
+# Ensure claude is on PATH for all users
+ENV PATH=/opt/conda/envs/claude_env/bin:$PATH
+
+# Create non-root user for running the agent
+RUN useradd -m -s /bin/bash agent
+
+CMD ["/bin/bash"]

@@ -1,0 +1,54 @@
+- name: claude-3-7-sonnet-20250219
+  use_temperature: 0.0
+  edit_format: diff
+  weak_model_name: claude-3-5-haiku-20241022
+  use_repo_map: true
+  examples_as_sys_msg: true
+  extra_params:
+    extra_headers:
+      anthropic-beta: prompt-caching-2024-07-31,pdfs-2024-09-25,output-128k-2025-02-19
+    max_tokens: 64000
+  cache_control: true
+  editor_model_name: claude-3-7-sonnet-20250219
+  editor_edit_format: editor-diff
+  accepts_settings:
+  - thinking_tokens
+
+
+- name: gpt-4.1
+  use_temperature: 0.0
+  edit_format: diff
+  weak_model_name: gpt-4.1-mini
+  use_repo_map: true
+  reminder: sys
+  editor_model_name: gpt-4.1-mini
+
+- name: deepseek/deepseek-chat
+  use_temperature: 0.0
+  edit_format: diff
+  use_repo_map: true
+  reminder: sys
+  examples_as_sys_msg: true
+  extra_params:
+    max_tokens: 8192
+  caches_by_default: true
+  
+- name: gpt-5-2025-08-07
+  edit_format: diff
+  weak_model_name: gpt-5-nano-2025-08-07
+  use_repo_map: true
+  use_temperature: false
+  accepts_settings:
+  - reasoning_effort
+
+- name: o3
+  edit_format: diff
+  weak_model_name: gpt-4.1-mini
+  use_repo_map: true
+  examples_as_sys_msg: true
+  streaming: false
+  editor_model_name: gpt-4.1
+  editor_edit_format: editor-diff
+  system_prompt_prefix: 'Formatting re-enabled. '
+  accepts_settings:
+  - reasoning_effort
