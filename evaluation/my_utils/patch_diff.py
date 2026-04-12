@@ -8,9 +8,6 @@ from pathlib import Path
 import json
 import docker
 import os
-import io
-import tarfile
-import re, shlex
 
 SEMGREP_TOKEN = os.environ.get("SEMGREP_APP_TOKEN", "")
 
@@ -66,7 +63,6 @@ def find_patch(result_dir: Path) -> Path:
     matches.sort(key=lambda p: p.stat().st_mtime)
     return matches[-1]
 
-import shutil
 
 """
 ID mapping for locating test scripts by alternate IDs.

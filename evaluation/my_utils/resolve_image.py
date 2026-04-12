@@ -2,7 +2,6 @@
 import sys
 import docker
 from pathlib import Path
-import docker
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -56,3 +55,10 @@ def resolve_image(image: str, image_path_dir: str) -> str:
     eprint(f"[FATAL] Failed to pull image after 3 attempts: {last_error}")
     sys.exit(1)
 
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print(f"Usage: {sys.argv[0]} <image> <image_path_dir>", file=sys.stderr)
+        sys.exit(1)
+    result = resolve_image(sys.argv[1], sys.argv[2])
+    print(result)

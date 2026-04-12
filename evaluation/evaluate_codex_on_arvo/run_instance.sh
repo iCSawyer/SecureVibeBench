@@ -20,7 +20,7 @@ EVAL_DIR="$(dirname "$SCRIPT_DIR")"
 # ==========================================
 # 2. Load API Key (OpenAI / Codex)
 # ==========================================
-source "${SCRIPT_DIR}/.env"
+source "${EVAL_DIR}/.env"
 
 if [ -z "${OPENAI_API_KEY:-}" ]; then
     echo "[ERROR] OPENAI_API_KEY is not set in the .env file"

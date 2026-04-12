@@ -1,3 +1,10 @@
+# Evaluation runtime artifacts
+evaluation/clone_repo/
+evaluation/logs/
+evaluation/evaluate_*/results-*/
+evaluation/evaluate_*/template_output_*/
+*.hash
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

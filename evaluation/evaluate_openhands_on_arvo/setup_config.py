@@ -10,7 +10,7 @@ from tomlkit import table
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 TEMPLATE_PATH = str(_SCRIPT_DIR / "config.mytemplate.toml")
-ENV_PATH      = str(_SCRIPT_DIR / ".env")
+ENV_PATH      = str(_SCRIPT_DIR.parent / ".env")
 
 def resolve_keys_and_base_url(model_name: str):
     if not os.path.exists(ENV_PATH):

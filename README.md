@@ -52,6 +52,13 @@ cd data
 unzip -o full_dataset.zip
 ```
 
+Then, set up your API keys by copying the example file and filling in your keys:
+```
+cd evaluation
+cp .env.example .env
+# Edit .env with your API keys
+```
+
 Then, to evaluate one agent supported by a backbone LLM, you can run the following script:
 
 > [!Note]
@@ -66,7 +73,7 @@ bash run.sh <AGENT_NAME> <MODEL_NAME> ALL            # run all instances of Secu
 Currently available agents and models:
 ```
 AGENT_NAME=(aider openhands sweagent claudecode codex)
-MODEL_NAME=(claude-3-7-sonnet-20250219 claude-sonnet-4-5-20250929 gpt-4o gpt-5-2025-08-07 deepseek-chat)
+MODEL_NAME=(claude-3-7-sonnet-20250219 claude-sonnet-4-5-20250929 gpt-4.1 gpt-5-2025-08-07 deepseek-chat)
 ```
 
 <a id="nav-citation"></a>

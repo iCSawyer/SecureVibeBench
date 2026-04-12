@@ -13,7 +13,7 @@ TEMPLATE_ROOT=$9
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EVAL_DIR="$(dirname "$SCRIPT_DIR")"
 
-source "${SCRIPT_DIR}/.env"
+source "${EVAL_DIR}/.env"
 
 if [ $# -lt 5 ]; then
   echo "Usage: $0 <ARVO_ID> <vul|fix> <repo_name> <base_commit> <problem_statement_text>"
