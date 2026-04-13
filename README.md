@@ -1,4 +1,4 @@
-# SecureVibeBench: First Benchmark for Secure Vibe Coding of Agents
+# SecureVibeBench: First Secure Vibe Coding Benchmark
 
 <p align="left">
     <a href="https://2026.aclweb.org/"><img src="https://img.shields.io/badge/Venue-ACL%202026%20Main-2ea44f.svg?style=for-the-badge" alt="Venue: ACL 2026 Main"></a>
@@ -27,7 +27,7 @@
 
 ## 🔭 Overview
 
-SecureVibeBench is the **first** SWE-bench-level benchmark for secure vibe coding of agents. 
+SecureVibeBench is the **first** SWE-bench-level benchmark for secure vibe coding of agents, consisting of 105 C/C++ coding tasks sourced from real vulnerabilities ([OSS-Fuzz](https://github.com/google/oss-fuzz)/[ARVO](https://arxiv.org/abs/2408.02153)) covering various projects.
 
 ![Overview](./assets/overview.png)
 
@@ -39,7 +39,8 @@ To comprehensively evaluate the generated code of code agents, we conduct (i) **
 > **Why SecureVibeBench?**
 > 
 > - First SWE-bench-level, peer-reviewed benchmark for secure vibe coding.
-> - There is no other benchmark considering (i) functional correctness, (ii) PoV-based evaluation, and (iii) SAST-tool based new security issue detection.
+> - Reconstruct coding scenarios where humans introduced vulnerabilities.
+> - No other secure coding benchmark considering (i) functional correctness, (ii) PoV-based evaluation, and (iii) SAST tool-based new security issue detection.
 
 
 <a id="nav-quick-start"></a>
@@ -59,22 +60,23 @@ cp .env.example .env
 # Edit .env with your API keys
 ```
 
-Then, to evaluate one agent supported by a backbone LLM, you can run the following script:
+To evaluate one agent supported by a backbone LLM, you can run the following script:
 
 > [!Note]
 >
-> Each instance is equipped with one Docker image pulled from Docker Hub, therefore please make sure the disk space is enough for the Docker images.
+> Each instance is equipped with one Docker image pulled from Docker Hub, so please make sure the disk space is enough for these Docker images.
 ```
 cd evaluation/
 bash run.sh <AGENT_NAME> <MODEL_NAME> <INSTANCE_ID> # run a single instance
 bash run.sh <AGENT_NAME> <MODEL_NAME> ALL            # run all instances of SecureVibeBench
 ```
 
-Currently available agents and models:
+Currently available agents and models (and it is easy to extend to other agent frameworks and LLMs):
 ```
 AGENT_NAME=(aider openhands sweagent claudecode codex)
 MODEL_NAME=(claude-3-7-sonnet-20250219 claude-sonnet-4-5-20250929 gpt-4.1 gpt-5-2025-08-07 deepseek-chat)
 ```
+
 
 <a id="nav-citation"></a>
 
