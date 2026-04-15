@@ -3,6 +3,7 @@
 <p align="left">
     <a href="https://2026.aclweb.org/"><img src="https://img.shields.io/badge/Venue-ACL%202026%20Main-2ea44f.svg?style=for-the-badge" alt="Venue: ACL 2026 Main"></a>
     <a href="https://arxiv.org/abs/2509.22097v2"><img src="https://img.shields.io/badge/arXiv-2509.22097-b31b1b.svg?style=for-the-badge" alt="arXiv"></a>
+    <a href="https://huggingface.co/datasets/iCSawyer/SecureVibeBench"><img src="https://img.shields.io/badge/HF-SecureVibeBench-FFD21F.svg?style=for-the-badge&logo=huggingface" alt="Hugging Face: SecureVibeBench"></a>
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License MIT"></a>
     <a href=""><img src="https://img.shields.io/badge/Leaderboard-TBD-orange.svg?style=for-the-badge" alt="Leaderboard"></a>
 </p>
@@ -19,8 +20,9 @@
 
 ## ✨ News
 
+- **[2026-04-15]** 🤗 We support the usage via [Hugging Face Datasets](https://huggingface.co/datasets/iCSawyer/SecureVibeBench). 
 - **[2026-04-11]** 🚀 We released code and data for SecureVibeBench.
-* **[2026-04-07]** 🎉 Our paper has been accepted to **ACL 2026 Main Conference** and recommended as **Oral** presentation.
+- **[2026-04-07]** 🎉 Our paper has been accepted to **ACL 2026 Main Conference** and recommended as **Oral** presentation.
 
 
 <a id="nav-overview"></a>
@@ -52,6 +54,8 @@ Please first unzip the data:
 cd data
 unzip -o full_dataset.zip
 ```
+You can also use the Hugging Face Datasets via `evaluation/my_utils/extract_info_hf.py`.
+
 
 Then, set up your API keys by copying the example file and filling in your keys:
 ```
@@ -114,12 +118,10 @@ Our work cannot be separated from the following excellent works, [OSS-Fuzz](http
 ```
 
 ```
-@conference{203944,
-  author = {Kostya Serebryany},
-  title = {{OSS-Fuzz} - Google{\textquoteright}s continuous fuzzing service for open source software},
-  year = {2017},
-  address = {Vancouver, BC},
-  publisher = {USENIX Association},
-  month = aug
+@article{serebryany2017oss,
+  title={$\{$OSS-Fuzz$\}$-Google's continuous fuzzing service for open source software},
+  author={Serebryany, Kostya},
+  year={2017}
 }
+
 ```

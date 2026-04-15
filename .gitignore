@@ -1,3 +1,5 @@
+no_github/
+
 # Evaluation runtime artifacts
 evaluation/clone_repo/
 evaluation/logs/
