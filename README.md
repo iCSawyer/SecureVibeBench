@@ -1,4 +1,5 @@
-# SecureVibeBench: First Secure Vibe Coding Benchmark
+# SecureVibeBench: Benchmarking Secure Vibe Coding of AI Agents via Reconstructing Vulnerability-Introducing Scenarios
+
 
 <p align="left">
     <a href="https://2026.aclweb.org/"><img src="https://img.shields.io/badge/Venue-ACL%202026%20Main-2ea44f.svg?style=for-the-badge" alt="Venue: ACL 2026 Main"></a>
