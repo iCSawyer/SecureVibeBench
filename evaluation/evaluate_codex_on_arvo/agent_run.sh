@@ -1,4 +1,7 @@
 #!/bin/bash
+# Codex CLI version: 0.63.0
+# Model: gpt-5-2025-08-07
+
 set -euo pipefail
 
 export PATH="/opt/conda/envs/codex_env/bin:/opt/conda/bin:$PATH"

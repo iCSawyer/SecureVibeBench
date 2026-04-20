@@ -1,4 +1,7 @@
 #!/bin/bash
+# Claude Code version: 2.0.54
+# Model: claude-sonnet-4-5-20250929
+
 set -euo pipefail
 
 export PATH="/opt/conda/envs/claude_env/bin:/opt/conda/bin:$PATH"

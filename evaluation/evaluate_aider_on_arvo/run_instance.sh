@@ -1,4 +1,5 @@
 #!/bin/bash
+# Aider version: 0.86.1
 
 ARVO_ID=$1
 MODE=$2
