@@ -18,7 +18,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 AGENT_IMAGE_NAME="${ARVO_ID}_${MODE}_${AGENT_NAME}"
 echo "Starting run_instance.sh with parameters:"
-eval "$(python "${SCRIPT_DIR}/my_utils/extract_info.py" "$JSON_PATH")"
+eval "$(python "${SCRIPT_DIR}/my_utils/extract_info_hf.py" "$ARVO_ID")"
 
 echo "VIC: $VIC"
 echo "PVIC: $PVIC"

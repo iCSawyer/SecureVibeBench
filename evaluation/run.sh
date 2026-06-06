@@ -42,22 +42,15 @@ INSTANCE_ARG="$3"
 DATA_DIR="${SCRIPT_DIR}/../data"
 JSON_PATH_DIR="${DATA_DIR}"
 
-# Check if JSONs exist; if not, unzip full_dataset.zip as described in README
-if ! ls "${JSON_PATH_DIR}"/*.json >/dev/null 2>&1; then
-  echo "[INFO] No JSON files found in data/. Unzipping full_dataset.zip..."
-  (cd "${DATA_DIR}" && unzip -o full_dataset.zip)
-fi
+# SecureVibeBench uses the Hugging Face dataset by default; download (and cache) it on
+# first use so it is available before any evaluation runs.
+HF_DATASET="iCSawyer/SecureVibeBench"
+echo "[INFO] Downloading SecureVibeBench dataset from Hugging Face (${HF_DATASET})..."
 
 if [ "$INSTANCE_ARG" == "ALL" ]; then
-  ARVO_IDS=()
-  for f in "$JSON_PATH_DIR"/*.json; do
-    id="$(basename "$f" .json)"
-    # Skip non-numeric files like format_example.json
-    if [[ "$id" =~ ^[0-9]+$ ]]; then
-      ARVO_IDS+=("$id")
-    fi
-  done
+  mapfile -t ARVO_IDS < <(python -c "from datasets import load_dataset; [print(r['localid']) for r in load_dataset('${HF_DATASET}', split='train')]")
 else
+  python -c "from datasets import load_dataset; load_dataset('${HF_DATASET}', split='train')"
   ARVO_IDS=("$INSTANCE_ARG")
 fi
 

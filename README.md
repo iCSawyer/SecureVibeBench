@@ -50,15 +50,9 @@ To comprehensively evaluate the generated code of code agents, we conduct (i) **
 
 ## 🛠️ Quick Start
 
-Please first unzip the data:
-```
-cd data
-unzip -o full_dataset.zip
-```
-You can also use the Hugging Face Datasets via `evaluation/my_utils/extract_info_hf.py`.
+SecureVibeBench uses the [Hugging Face dataset](https://huggingface.co/datasets/iCSawyer/SecureVibeBench) to store the data. We also keep a local copy of the data in this repository for easy access.
 
-
-Then, set up your API keys by copying the example file and filling in your keys:
+First, set up your API keys by copying the example file and filling in your keys:
 ```
 cd evaluation
 cp .env.example .env
