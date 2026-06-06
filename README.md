@@ -6,7 +6,7 @@
     <a href="https://arxiv.org/abs/2509.22097v2"><img src="https://img.shields.io/badge/arXiv-2509.22097-b31b1b.svg?style=for-the-badge" alt="arXiv"></a>
     <a href="https://huggingface.co/datasets/iCSawyer/SecureVibeBench"><img src="https://img.shields.io/badge/HF-SecureVibeBench-FFD21F.svg?style=for-the-badge&logo=huggingface" alt="Hugging Face: SecureVibeBench"></a>
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License MIT"></a>
-    <a href=""><img src="https://img.shields.io/badge/Leaderboard-TBD-orange.svg?style=for-the-badge" alt="Leaderboard"></a>
+    <a href="https://chen-junkai.github.io/securevibebench-leaderboard/"><img src="https://img.shields.io/badge/Leaderboard-Online-2ea44f.svg?style=for-the-badge" alt="Leaderboard"></a>
 </p>
 
 <p align="left">
@@ -21,9 +21,10 @@
 
 ## ✨ News
 
+- **[2026-06-06]** 🏆 We released the online [Leaderboard](https://chen-junkai.github.io/securevibebench-leaderboard/) for SecureVibeBench.
 - **[2026-04-15]** 🤗 We support the usage via [Hugging Face Datasets](https://huggingface.co/datasets/iCSawyer/SecureVibeBench). 
 - **[2026-04-11]** 🚀 We released code and data for SecureVibeBench.
-- **[2026-04-07]** 🎉 Our paper has been accepted to **ACL 2026 Main Conference** and recommended as **Oral** presentation.
+- **[2026-04-07]** 🎉 Our paper has been accepted to **ACL 2026 Main Conference**.
 
 
 <a id="nav-overview"></a>
