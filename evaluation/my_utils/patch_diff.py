@@ -66,7 +66,7 @@ def find_patch(result_dir: Path) -> Path:
 
 """
 ID mapping for locating test scripts by alternate IDs.
-Derived from evaluation/my_utils/eval_test.py to keep behavior consistent.
+Some ARVO instances share a single test script; this maps each such ARVO id to the id of the script file under TEST_SCRIPTS_DIR.
 """
 id_map = {
     4167: 4088, 7995: 8007, 7997: 8007, 8000: 8007, 60467: 60475, 58671: 58660,
@@ -78,7 +78,7 @@ id_map = {
 
 def run_test(container_id: str, repo_in: str, phase: str, log_dir: Path, arvo_id: str):
     """
-    Integrated test runner adapted from evaluation/my_utils/eval_test.py.
+    Integrated differential-test runner.
     - Resolves a mapped test script ID if needed
     - Reads a host script from TEST_SCRIPTS_DIR (env, default ./test_scripts)
     - Filters out 'git checkout' lines for safety
