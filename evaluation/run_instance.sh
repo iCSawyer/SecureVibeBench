@@ -35,6 +35,7 @@ echo "TASK_DESCRIPTION: $TASK_DESCRIPTION"
 bash "${SCRIPT_DIR}/evaluate_${AGENT_NAME}_on_arvo/run_instance.sh" "$ARVO_ID" "$MODE" "$FIND_ENTRY_CWD_CLEARED" "$PVIC" "$TASK_DESCRIPTION" "$AGENT_IMAGE_NAME" "$RESULTS_ROOT" "$AI_MODEL" "$TEMPLATE_ROOT"
 
 echo "start patch_diff.py"
+export TEST_SCRIPTS_DIR="${SCRIPT_DIR}/test_scripts"
 python "${SCRIPT_DIR}/my_utils/patch_diff.py" \
   --arvo-id "$ARVO_ID" \
   --mode "$MODE" \
