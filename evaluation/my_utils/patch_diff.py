@@ -8,6 +8,10 @@ from pathlib import Path
 import json
 import docker
 import os
+import sys
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from parse_test_report import parse_test_output, ParseResult, parse_single_file
 
 SEMGREP_TOKEN = os.environ.get("SEMGREP_APP_TOKEN", "")
 
@@ -137,6 +141,109 @@ def run_test(container_id: str, repo_in: str, phase: str, log_dir: Path, arvo_id
         print(f"📄 Test log for phase '{phase}' copied to host: {log_host_path}")
 
 
+def ensure_ic_baseline(arvo_id, mode: str, repo_in: str, baseline_dir: Path) -> Path | None:
+    """
+    Baseline for the IC (functional-correctness) metric: the "before patch" /
+    gold-reference test run.
+    
+    """
+    arvo_id_int = int(arvo_id)
+    script_id = id_map.get(arvo_id_int, arvo_id_int)
+
+    baseline_dir = Path(baseline_dir)
+    baseline_dir.mkdir(parents=True, exist_ok=True)
+    baseline_log = baseline_dir / f"{script_id}.log"
+    baseline_parsed = baseline_dir / f"{script_id}_result_parsed.json"
+
+    if baseline_parsed.exists():
+        print(f"ℹ️  Reusing cached baseline for script {script_id}: {baseline_parsed}")
+        return baseline_parsed
+
+    test_scripts_dir = os.environ.get("TEST_SCRIPTS_DIR", "./test_scripts")
+    script_host_path = os.path.join(test_scripts_dir, f"{script_id}.sh")
+    if not os.path.exists(script_host_path):
+        print(f"[WARN] Test script not found: {script_host_path}, cannot build baseline for {script_id}")
+        return None
+
+    image_tag = f"n132/arvo:{arvo_id_int}-{mode}"
+    script_container_path = f"/_evaluation/baseline_{script_id}.sh"
+    log_container_path = f"/_evaluation/baseline_{script_id}.log"
+
+    print(f"🏗️  Building differential-test baseline for script {script_id} (fresh container, gold reference)...")
+    container_id = sh(["docker", "run", "-dit", "--rm", "-w", repo_in, image_tag, "bash"])
+    try:
+        subprocess.run(["docker", "exec", container_id, "mkdir", "-p", "/_evaluation"], check=True)
+        subprocess.run(["docker", "exec", container_id, "mkdir", "-p", repo_in], check=True)
+        # Copy the script UNFILTERED: keep its 'git checkout <ref>' so the tests
+        # run on the gold reference code rather than the agent's tree.
+        subprocess.run(["docker", "cp", script_host_path, f"{container_id}:{script_container_path}"], check=True)
+        subprocess.run(["docker", "exec", container_id, "chmod", "+x", script_container_path], check=True)
+        subprocess.run([
+            "docker", "exec", container_id, "bash", "-lc",
+            f'bash "{script_container_path}" > "{log_container_path}" 2>&1; ' \
+            f'rc=$?; echo "[exit code: $rc]" >> "{log_container_path}"; exit $rc'
+        ])
+        subprocess.run(["docker", "cp", f"{container_id}:{log_container_path}", str(baseline_log)], check=False)
+    finally:
+        subprocess.run(["docker", "stop", container_id], check=False)
+
+    if not baseline_log.exists():
+        print(f"[WARN] Baseline log not produced for script {script_id}")
+        return None
+
+    output_content = baseline_log.read_text(errors="ignore")
+    parse_result = parse_test_output(localid=script_id, s=output_content)
+    baseline_txt = baseline_dir / f"{script_id}_result_parsed.txt"
+    with open(baseline_txt, "w") as f:
+        f.write(str(parse_result))
+    parsed_json = parse_single_file(baseline_txt)
+    with open(baseline_parsed, "w") as f:
+        json.dump(parsed_json, f, indent=2)
+    print(f"📄 Baseline result cached: {baseline_parsed}")
+    return baseline_parsed
+
+
+def compare_functional(agent_parsed_json: Path, baseline_parsed_json: Path) -> dict:
+    """
+    Decide whether the agent passes the functional test, by comparing its
+    after-patch parsed result against the baseline (gold) parsed result.
+
+    """
+    if not Path(agent_parsed_json).exists() or not Path(baseline_parsed_json).exists():
+        return {"functional_compare_error": True, "agent_type": None,
+                "baseline_type": None, "functional_pass": None,
+                "agent_count": None, "baseline_count": None}
+    try:
+        with open(agent_parsed_json, "r", encoding="utf-8") as f:
+            agent_data = json.load(f)
+        with open(baseline_parsed_json, "r", encoding="utf-8") as f:
+            gt_data = json.load(f)
+
+        agent_type = agent_data.get("type")
+        gt_type = gt_data.get("type")
+
+        if agent_type == "BoolResult" and gt_type == "BoolResult":
+            matched = agent_data.get("Status") == gt_data.get("Status")
+            return {"functional_compare_error": False, "agent_type": "BoolResult",
+                    "baseline_type": "BoolResult", "functional_pass": int(matched),
+                    "agent_count": None, "baseline_count": None}
+
+        if agent_type == "ListResult" and gt_type == "ListResult":
+            agent_list = set(agent_data.get("PassList", []))
+            gt_list = set(gt_data.get("PassList", []))
+            matched = gt_list.issubset(agent_list)  # require agent_list ⊇ gt_list
+            return {"functional_compare_error": False, "agent_type": "ListResult",
+                    "baseline_type": "ListResult", "functional_pass": int(matched),
+                    "agent_count": len(agent_list), "baseline_count": len(gt_list)}
+
+        return {"functional_compare_error": True, "agent_type": agent_type,
+                "baseline_type": gt_type, "functional_pass": 0,
+                "agent_count": None, "baseline_count": None}
+    except Exception as e:
+        print(f"[WARN] compare_functional failed: {e}")
+        return {"functional_compare_error": True, "agent_type": None,
+                "baseline_type": None, "functional_pass": None,
+                "agent_count": None, "baseline_count": None}
 
 
 def run_sast(
@@ -379,10 +486,48 @@ def main():
             print(f"📄 JSON result written to: {json_log_path}")
         
         
-         # --- Run test ---
+         # --- Run test (differential: baseline vs. after-patch) ---
         if args.run_test=="TRUE":
-            run_test(container_id, repo_in, phase="pvic_with_agent_patched", log_dir=latest, arvo_id=arvo_id)
-            
+            phase = "pvic_with_agent_patched"
+
+            # 1) Ensure the "before patch" baseline exists (run once per instance,
+            #    cached and shared across all agents/models/runs).
+            baseline_dir = Path(os.environ.get(
+                "TEST_BASELINE_DIR",
+                os.path.join(os.environ.get("TEST_SCRIPTS_DIR", "./test_scripts"), os.pardir, "test_baseline"),
+            ))
+            baseline_parsed = ensure_ic_baseline(arvo_id, mode, repo_in, baseline_dir)
+
+            # 2) After-patch run on the agent's code.
+            run_test(container_id, repo_in, phase=phase, log_dir=latest, arvo_id=arvo_id)
+
+            log_host_path = latest / f"test_{phase}.log"
+            output_content = ""
+            if log_host_path.exists():
+                output_content = log_host_path.read_text(errors="ignore")
+
+            arvo_id = int(arvo_id)
+            parse_id = id_map.get(arvo_id, arvo_id)
+            parse_result = parse_test_output(localid=parse_id, s=output_content)
+            parse_result_path = latest / f"test_{phase}_result_parsed.txt"
+            with open(parse_result_path, "w") as f:
+                f.write(str(parse_result))
+
+            agent_parsed_json = latest / f"test_{phase}_result_parsed.json"
+            parsed_json = parse_single_file(parse_result_path)
+            with open(agent_parsed_json, "w") as f:
+                json.dump(parsed_json, f, indent=2)
+
+            # 3) Compare after-patch vs. baseline -> functional pass/fail.
+            if baseline_parsed is not None:
+                functional = compare_functional(agent_parsed_json, baseline_parsed)
+                with open(latest / f"test_{phase}_functional_result.json", "w") as f:
+                    json.dump(functional, f, indent=2)
+                print(f"Functional test passed: {functional.get('functional_pass')} "
+                      f"(agent {functional.get('agent_count')} vs baseline {functional.get('baseline_count')})")
+            else:
+                print("[WARN] No baseline available; skipping functional comparison.")
+
         # --- Run sast tool ---
         if args.run_sast=="TRUE" and poc_result == CommitSafetyStatus.safe:
             run_sast(container_id, repo_in, phase="pvic_with_agent_patched", commit_id=pvic)

@@ -36,6 +36,11 @@ bash "${SCRIPT_DIR}/evaluate_${AGENT_NAME}_on_arvo/run_instance.sh" "$ARVO_ID" "
 
 echo "start patch_diff.py"
 export TEST_SCRIPTS_DIR="${SCRIPT_DIR}/test_scripts"
+# Baseline cache for the IC (functional-correctness) metric: the "before patch"
+# gold-reference test results that each agent's after-patch result is compared
+# against. Shared across all agents/models, so it is computed at most once per
+# instance and reused thereafter.
+export TEST_BASELINE_DIR="${SCRIPT_DIR}/test_baseline"
 python "${SCRIPT_DIR}/my_utils/patch_diff.py" \
   --arvo-id "$ARVO_ID" \
   --mode "$MODE" \
