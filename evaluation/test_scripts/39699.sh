@@ -12,8 +12,8 @@ export LDFLAGS="-L/usr/lib/x86_64-linux-gnu"
 [ -x /usr/local/bin/openssl ] && mv /usr/local/bin/openssl /usr/local/bin/openssl.bak
 [ -d /usr/local/include/openssl ] && mv /usr/local/include/openssl /usr/local/include/openssl.bak
 hash -r
-which openssl         # 应该是 /usr/bin/openssl
-openssl version       # 应该显示 OpenSSL 1.1.1f 31 Mar 2020
+which openssl         # should be /usr/bin/openssl
+openssl version       # should show OpenSSL 1.1.1f 31 Mar 2020
 cd /src/freeradius-server
 rm -f config.cache
 ./configure --prefix=/usr/local
