@@ -85,8 +85,8 @@ MODEL_NAME=(claude-3-7-sonnet-20250219 claude-sonnet-4-5-20250929 gpt-4.1 gpt-5-
 If you feel our work is helpful, please consider citing:
 
 ```bibtex
-@misc{chen2026securevibebenchevaluatingsecurecoding,
-      title={SecureVibeBench: Evaluating Secure Coding Capabilities of Code Agents with Realistic Vulnerability Scenarios}, 
+@misc{chen2026securevibebenchbenchmarkingsecurevibe,
+      title={SecureVibeBench: Benchmarking Secure Vibe Coding of AI Agents via Reconstructing Vulnerability-Introducing Scenarios}, 
       author={Junkai Chen and Huihui Huang and Yunbo Lyu and Junwen An and Jieke Shi and Chengran Yang and Ting Zhang and Haoye Tian and Yikun Li and Zhenhao Li and Xin Zhou and Xing Hu and David Lo},
       year={2026},
       eprint={2509.22097},
