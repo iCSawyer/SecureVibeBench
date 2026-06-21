@@ -51,7 +51,7 @@ To comprehensively evaluate the generated code of code agents, we conduct (i) **
 
 ## 🛠️ Quick Start
 
-SecureVibeBench uses the [Hugging Face dataset](https://huggingface.co/datasets/iCSawyer/SecureVibeBench) to store the data. We also keep a local copy of the data in this repository for easy access.
+SecureVibeBench uses the [Hugging Face dataset](https://huggingface.co/datasets/iCSawyer/SecureVibeBench) to store the data.
 
 First, set up your API keys by copying the example file and filling in your keys:
 ```
