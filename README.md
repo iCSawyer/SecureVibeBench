@@ -85,14 +85,33 @@ MODEL_NAME=(claude-3-7-sonnet-20250219 claude-sonnet-4-5-20250929 gpt-4.1 gpt-5-
 If you feel our work is helpful, please consider citing:
 
 ```bibtex
-@misc{chen2026securevibebenchbenchmarkingsecurevibe,
-      title={SecureVibeBench: Benchmarking Secure Vibe Coding of AI Agents via Reconstructing Vulnerability-Introducing Scenarios}, 
-      author={Junkai Chen and Huihui Huang and Yunbo Lyu and Junwen An and Jieke Shi and Chengran Yang and Ting Zhang and Haoye Tian and Yikun Li and Zhenhao Li and Xin Zhou and Xing Hu and David Lo},
-      year={2026},
-      eprint={2509.22097},
-      archivePrefix={arXiv},
-      primaryClass={cs.SE},
-      url={https://arxiv.org/abs/2509.22097}, 
+@inproceedings{chen2026securevibebench,
+    title = "{S}ecure{V}ibe{B}ench: Benchmarking Secure Vibe Coding of {AI} Agents via Reconstructing Vulnerability-Introducing Scenarios",
+    author = "Chen, Junkai  and
+      Huang, Huihui  and
+      Lyu, Yunbo  and
+      An, Junwen  and
+      Shi, Jieke  and
+      Yang, Chengran  and
+      Zhang, Ting  and
+      Tian, Haoye  and
+      Li, Yikun  and
+      Li, Zhenhao  and
+      Zhou, Xin  and
+      Hu, Xing  and
+      Lo, David",
+    editor = "Liakata, Maria  and
+      Moreira, Viviane P.  and
+      Zhang, Jiajun  and
+      Jurgens, David",
+    booktitle = "Proceedings of the 64th Annual Meeting of the {A}ssociation for {C}omputational {L}inguistics (Volume 1: Long Papers)",
+    month = jul,
+    year = "2026",
+    address = "San Diego, California, United States",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2026.acl-long.1107/",
+    pages = "24144--24168",
+    ISBN = "979-8-89176-390-6"
 }
 ```
 
