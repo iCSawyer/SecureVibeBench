@@ -2,12 +2,18 @@
 
 
 <p align="left">
+    <img src="https://img.shields.io/badge/Version-v0.2-blue.svg?style=for-the-badge" alt="Version: v0.2">
     <a href="https://2026.aclweb.org/"><img src="https://img.shields.io/badge/Venue-ACL%202026%20Main-2ea44f.svg?style=for-the-badge" alt="Venue: ACL 2026 Main"></a>
     <a href="https://arxiv.org/abs/2509.22097"><img src="https://img.shields.io/badge/arXiv-2509.22097-b31b1b.svg?style=for-the-badge" alt="arXiv"></a>
     <a href="https://huggingface.co/datasets/iCSawyer/SecureVibeBench"><img src="https://img.shields.io/badge/HF-SecureVibeBench-FFD21F.svg?style=for-the-badge&logo=huggingface" alt="Hugging Face: SecureVibeBench"></a>
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License MIT"></a>
     <a href="https://chen-junkai.github.io/securevibebench-leaderboard/"><img src="https://img.shields.io/badge/Leaderboard-Online-2ea44f.svg?style=for-the-badge" alt="Leaderboard"></a>
 </p>
+
+> [!IMPORTANT]
+> **SecureVibeBench is now v0.2**, with Harbor-format tasks and a unified mini-swe-agent evaluation workflow. We refer to the original release and evaluation workflow as **v0.1**.
+>
+> **Results obtained with v0.2 may differ from v0.1.** The original task instructions, tests, and scoring logic remain unchanged. Please report the benchmark version and agent/model configuration when comparing results.
 
 <p align="left">
     ✨&nbsp;<a href="#nav-news">News</a>
@@ -21,6 +27,7 @@
 
 ## ✨ News
 
+- **[2026-10-29]** We updated to **v0.2**, introducing Harbor-format tasks and unified model generation and evaluation. The original version is now referred to as **v0.1**; results may differ between versions.
 - **[2026-06-06]** 🏆 We released the online [Leaderboard](https://chen-junkai.github.io/securevibebench-leaderboard/) for SecureVibeBench.
 - **[2026-04-15]** 🤗 We support the usage via [Hugging Face Datasets](https://huggingface.co/datasets/iCSawyer/SecureVibeBench). 
 - **[2026-04-11]** 🚀 We released code and data for SecureVibeBench.
@@ -51,31 +58,42 @@ To comprehensively evaluate the generated code of code agents, we conduct (i) **
 
 ## 🛠️ Quick Start
 
-SecureVibeBench uses the [Hugging Face dataset](https://huggingface.co/datasets/iCSawyer/SecureVibeBench) to store the data.
+The entry downloads tasks and their original evaluator from the HF [`habour-preview` branch](https://huggingface.co/datasets/iCSawyer/SecureVibeBench/tree/habour-preview), runs mini-swe-agent through Harbor, and reports functional and security metrics. Benchmark instructions, tests, and scoring remain unchanged. The existing HF default dataset is unaffected.
 
-First, set up your API keys by copying the example file and filling in your keys:
-```
-cd evaluation
-cp .env.example .env
-# Edit .env with your API keys
-```
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), Git, Docker and Docker Compose, then configure your model provider's API credentials:
 
-To evaluate one agent supported by a backbone LLM, you can run the following script:
-
-> [!Note]
->
-> Each instance is equipped with one Docker image pulled from Docker Hub, so please make sure the disk space is enough for these Docker images.
-```
-cd evaluation/
-bash run.sh <AGENT_NAME> <MODEL_NAME> <INSTANCE_ID> # run a single instance
-bash run.sh <AGENT_NAME> <MODEL_NAME> ALL            # run all instances of SecureVibeBench
+```bash
+export OPENAI_API_KEY='<your-api-key>'
+bash evaluation/run.sh '<provider/model>' --task 992
 ```
 
-Currently available agents and models (and it is easy to extend to other agent frameworks and LLMs):
+The command prepares Python 3.12 and locked dependencies automatically. Official mini-swe-agent source is cloned into `evaluation/mini-swe-agent/` and installed in editable mode. Omit `--task` to run all 105 tasks.
+
+Final metrics: `dev/runs/<job>/summary.json`. The same directory contains Harbor's original results, trajectories, patches, and benchmark reports. See [evaluation/README.md](./evaluation/README.md) for API endpoints and options.
+
+```text
+data/          One Harbor task example
+evaluation/    HF download → generation → evaluation
+dev/           Local environments, caches, and results (gitignored)
+pyproject.toml / uv.lock    Dependency declarations and locked versions
 ```
-AGENT_NAME=(aider openhands sweagent claudecode codex)
-MODEL_NAME=(claude-3-7-sonnet-20250219 claude-sonnet-4-5-20250929 gpt-4.1 gpt-5-2025-08-07 deepseek-chat)
+
+### Harbor task example
+
+[`data/securevibebench-992/`](./data/securevibebench-992/) illustrates the Harbor task format:
+
+```text
+data/securevibebench-992/
+├── instruction.md
+├── task.toml
+├── environment/Dockerfile
+└── tests/
+    ├── task.json
+    ├── test.sh
+    └── original/
 ```
+
+The original task instructions, tests, and evaluation code are preserved. This example requires the accompanying host-side verifier. Use [evaluation/](./evaluation/README.md) to run the benchmark; it downloads the complete tasks and evaluator from the HF `habour-preview` branch.
 
 
 <a id="nav-citation"></a>

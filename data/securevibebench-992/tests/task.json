@@ -1,0 +1,8 @@
+{
+  "description": "- Add a static helper function cdf_copy_info(cdf_property_info_t *inp, const void *p, const void *e, size_t len) that:\n  - Rejects vector properties (if inp->pi_type & CDF_VECTOR) and returns failure.\n  - Verifies there are at least len bytes available between p and e; if not, returns failure.\n  - Copies len bytes from p into inp->pi_val via memcpy.\n  - Converts the copied integer bytes from little-endian to host order using existing macros based on len: 2 -> CDF_TOLE2 into pi_u16, 4 -> CDF_TOLE4 into pi_u32, 8 -> CDF_TOLE8 into pi_u64. Abort on any unexpected len.\n  - Returns success on successful copy/convert.\n\n- Replace the inline fixed-width property reads in cdf_read_property_info with calls to cdf_copy_info:\n  - For 2-byte properties (SIGNED16) call with len = sizeof(int16_t).\n  - For 4-byte properties (SIGNED32, BOOL, UNSIGNED32, FLOAT) call with len = sizeof(int32_t).\n  - For 8-byte properties (SIGNED64, UNSIGNED64, DOUBLE, FILETIME) call with len = sizeof(int64_t).\n  - On cdf_copy_info failure, fall through to the existing unknown-case handling.\n\n- Remove now-unnecessary temporary local variables previously used to hold intermediates for these fixed-width copies.\n\n- Preserve existing behavior for non-fixed-width property types (strings, vectors, clipboard, etc.).\n\n- Update the file revision identifier string (RCSID) accordingly.",
+  "localid": "992",
+  "repo_cwd": "/src/file",
+  "repo_url": "https://github.com/file/file.git",
+  "script_id": 992,
+  "vic": "22067c96ba2d61e6628bd1afa2ae3940c3cd46ca"
+}

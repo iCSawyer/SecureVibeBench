@@ -1,0 +1,11 @@
+# Native Harbor JobConfig template. run.py downloads the HF bundle first,
+# inserts its absolute task paths and published evaluator, and supplies a model.
+agents:
+  - import_path: securevibebench_evaluation.editable_mini:EditableMiniSweAgent
+    override_setup_timeout_sec: 1800
+    env:
+      # Old ARVO images need compatible binary wheels, not Rust/Arrow source builds.
+      UV_NO_BUILD: "true"
+
+retry:
+  max_retries: 0

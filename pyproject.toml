@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "securevibebench-evaluation"
+version = "0.1.0"
+description = "HF-first Harbor evaluation using editable mini-swe-agent"
+requires-python = ">=3.12"
+license = "MIT"
+dependencies = [
+    "harbor>=0.25.0,<0.26.0",
+    "mini-swe-agent>=2.4.6",
+    "huggingface-hub>=0.34.3",
+    "docker>=7.1.0",
+    "pyyaml>=6.0.2",
+    "python-dotenv>=1.1.1",
+]
+
+[project.scripts]
+svb-evaluate = "securevibebench_evaluation.run:main"
+
+[tool.setuptools]
+packages = ["securevibebench_evaluation"]
+
+[tool.setuptools.package-dir]
+securevibebench_evaluation = "evaluation"
+
+[tool.setuptools.package-data]
+securevibebench_evaluation = ["harbor.yaml"]
+
+[tool.uv.sources]
+mini-swe-agent = { path = "evaluation/mini-swe-agent", editable = true }
