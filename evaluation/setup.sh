@@ -12,9 +12,10 @@ export UV_PROJECT_ENVIRONMENT="${SVB_EVAL_VENV:-$REPO_ROOT/dev/.venv}"
 export UV_CACHE_DIR="${UV_CACHE_DIR:-$REPO_ROOT/dev/.uv-cache}"
 export UV_PYTHON_INSTALL_DIR="${UV_PYTHON_INSTALL_DIR:-$REPO_ROOT/dev/.uv-python}"
 export PYTHONDONTWRITEBYTECODE=1
+export PATH="$REPO_ROOT/dev/tools/uv:$PATH"
 
 if ! command -v uv >/dev/null 2>&1; then
-    echo "Install uv first: https://docs.astral.sh/uv/getting-started/installation/" >&2
+    echo "Run bash evaluation/prepare.sh first to install uv and prepare the dataset." >&2
     exit 1
 fi
 

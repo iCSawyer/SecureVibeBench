@@ -33,13 +33,17 @@ def positive_int(value: str) -> int:
     return result
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model", required=True, help="Model identifier, e.g. provider/model")
+def add_dataset_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--hf-repo", default="iCSawyer/SecureVibeBench")
     parser.add_argument("--hf-revision", default="habour-preview",
                         help="HF branch, tag or commit; resolved to an immutable commit before downloading")
     parser.add_argument("--cache-dir", type=Path, default=DEV / "cache" / "huggingface")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--model", required=True, help="Model identifier, e.g. provider/model")
+    add_dataset_arguments(parser)
     parser.add_argument("--task", action="append", default=[], metavar="ID",
                         help="Repeat to select tasks; default is all 105 tasks")
     parser.add_argument("--n-concurrent", type=positive_int, default=1)
@@ -96,13 +100,15 @@ def prepare_dataset(args: argparse.Namespace) -> Path:
 
     info = HfApi().dataset_info(args.hf_repo, revision=args.hf_revision)
     args.resolved_hf_commit = info.sha
+    parent = args.cache_dir.resolve() / "materialized"
+    checkout = parent / info.sha
+    if checkout.exists():
+        return verify_bundle(checkout)
     snapshot = Path(snapshot_download(
         repo_id=args.hf_repo, repo_type="dataset", revision=info.sha,
         allow_patterns=["habour/**"], cache_dir=str(args.cache_dir.resolve()),
     ))
     source = verify_bundle(snapshot)
-    parent = args.cache_dir.resolve() / "materialized"
-    checkout = parent / info.sha
     if not checkout.exists():
         parent.mkdir(parents=True, exist_ok=True)
         staging = Path(tempfile.mkdtemp(prefix="." + info.sha + "-", dir=parent))

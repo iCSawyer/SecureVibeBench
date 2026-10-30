@@ -1,40 +1,60 @@
-# 模型生成与评估
+# Model Generation and Evaluation
 
-从 HF 下载 Harbor 任务和同包原版评估器，使用官方 mini-swe-agent 生成代码，再由 Harbor 执行评估。任务指令、测试和 benchmark 判分逻辑保持不变。
+Download Harbor tasks and their original evaluator from Hugging Face, generate code with official mini-swe-agent, and run evaluation through Harbor. Task instructions, tests, and benchmark scoring remain unchanged.
 
-## 运行
+## Prepare the Environment and Dataset
 
-需要 [uv](https://docs.astral.sh/uv/getting-started/installation/)、Git、Docker daemon、Docker Compose，以及模型 provider 的 API 凭据。uv 会准备 Python 3.12 和锁定依赖。在仓库根目录执行：
+Install Python 3.8+ (available as `python3`) and Git. From the repository root, run:
+
+```bash
+bash evaluation/prepare.sh
+```
+
+The script first downloads and verifies the complete HF task bundle and evaluator using only the system Python standard library. Installation proceeds only after the download and verification succeed. The script then installs uv into `dev/tools/uv/` if needed (using curl or wget), automatically clones official mini-swe-agent `v2.4.6`, and uses uv to prepare Python 3.12 and locked dependencies, including editable mini-swe-agent. The system Python only bootstraps the dataset download; uv manages the project environment and dependencies. Installation requires no sudo and does not modify shell profiles. Preparation requires no model API key and does not start task containers or call a model.
+
+Use `--hf-repo`, `--hf-revision`, and `--cache-dir` to select the dataset source and cache location. For example:
+
+```bash
+bash evaluation/prepare.sh --hf-revision habour-preview
+```
+
+The default HF cache is `dev/cache/huggingface/`. Subsequent runs reuse cached files but still contact HF to resolve the selected revision to its current commit. Use the `HF_TOKEN` environment variable to authenticate for private or gated datasets. Pass the same dataset and cache options to `run.sh` when using a custom source or cache.
+
+Install Git, Docker Engine, and Docker Compose using your system's installation method. The script checks Docker, Compose, and daemon access and reports any missing requirements. Dataset preparation can complete without Docker; before evaluation, start the daemon and ensure your user can access it.
+
+## Run Evaluation
+
+After preparation, configure your model provider's API credentials and run:
 
 ```bash
 export OPENAI_API_KEY='<your-api-key>'
 bash evaluation/run.sh '<provider/model>' --task 992
 ```
 
-按 provider 改用对应的凭据变量，例如 `ANTHROPIC_API_KEY`。每次运行先按 `uv.lock` 同步依赖；首次会下载官方 mini-swe-agent `2.4.6` 到 `evaluation/mini-swe-agent/`，在宿主与任务容器中以 editable 模式安装。已有源码及本地修改会保留。环境、缓存和结果均放在被 Git 忽略的 `dev/` 中。
+Use the credential variable required by your provider, such as `ANTHROPIC_API_KEY`. Each run synchronizes dependencies against `uv.lock`. If the official mini-swe-agent source is missing, setup clones version `2.4.6` into `evaluation/mini-swe-agent/`. It is installed in editable mode on the host and inside task containers. Existing source and local edits are preserved. Environments, caches, and results are stored in the gitignored `dev/` directory.
 
-`--task` 可重复；省略时运行全部 105 个任务。默认并发和每任务尝试次数均为 1。其他常用参数：
+Repeat `--task` to select multiple tasks, or omit it to run all 105 tasks. Concurrency and attempts per task both default to 1. Common options:
 
-| 参数 | 用途 |
+| Option | Purpose |
 | --- | --- |
-| `--base-url URL` | 自定义模型端点，需能从 Docker 容器访问 |
-| `--api-key-name NAME` | 保存 API key 的环境变量名 |
-| `--api-format FORMAT` | `openai_chat_completions`、`openai_responses` 或 `anthropic_messages` |
-| `--env-file PATH` | 加载凭据；已有环境变量优先 |
-| `--n-concurrent N` / `--attempts N` | 并发数 / 每任务尝试次数 |
-| `--step-limit N` / `--cost-limit N` | 模型步数 / 费用上限，费用 `0` 表示不限 |
-| `--print-config` | 下载并校验 HF 包、打印配置，不调用模型或 Docker |
+| `--base-url URL` | Custom model endpoint, reachable from Docker containers |
+| `--api-key-name NAME` | Name of the environment variable containing the API key |
+| `--api-format FORMAT` | `openai_chat_completions`, `openai_responses`, or `anthropic_messages` |
+| `--env-file PATH` | Load credentials; existing environment variables take precedence |
+| `--n-concurrent N` / `--attempts N` | Concurrency / attempts per task |
+| `--step-limit N` / `--cost-limit N` | Agent step limit / cost limit; a cost limit of `0` is unlimited |
+| `--print-config` | Download and verify the HF bundle and print the configuration without calling a model or Docker |
 
-完整参数见 `bash evaluation/run.sh --help`。
+See `bash evaluation/run.sh --help` for all options.
 
-## 数据与结果
+## Dataset and Results
 
-默认来源为 [iCSawyer/SecureVibeBench 的 `habour-preview` 分支](https://huggingface.co/datasets/iCSawyer/SecureVibeBench/tree/habour-preview)。入口固定本次下载的 commit 并校验任务和评估器；根目录 `data/` 只作格式示例。HF 原默认数据与现有 `load_dataset("iCSawyer/SecureVibeBench")` 调用保持兼容。
+The default source is the [`habour-preview` branch of iCSawyer/SecureVibeBench](https://huggingface.co/datasets/iCSawyer/SecureVibeBench/tree/habour-preview). The entry point pins the downloaded commit and verifies the tasks and evaluator. The root `data/` directory contains a format example. The original HF default dataset remains compatible with existing `load_dataset("iCSawyer/SecureVibeBench")` calls.
 
-最终结果位于 `dev/runs/<job>/summary.json`，终端也会打印。汇总直接保留 Harbor 原指标：`functional` 和 `security` 独立显示，并列出错误计数，不新增综合分数，也不为缺失结果补分。同目录包含原始 `result.json`、产物索引 `index.jsonl`，以及各 trial 的轨迹、补丁和原始评估报告。
+Final results are saved to `dev/runs/<job>/summary.json` and printed in the terminal. The summary preserves Harbor's metrics: `functional` and `security` are reported independently alongside error counts. It adds no aggregate score and does not substitute scores for missing results. The same job directory contains the original `result.json`, the artifact index `index.jsonl`, and each trial's trajectories, patches, and original evaluation reports.
 
-功能测试、PoV 和 SAST 默认继承 HF 包配置。SAST 需要原流程的 Semgrep 配置及 `SEMGREP_APP_TOKEN` 等凭据；可用 `--run-sast FALSE` 关闭本次 SAST。SAST 原始结果保留，不额外定义评分。
+Functional tests, PoV checks, and SAST inherit the HF bundle's defaults. SAST requires the original workflow's Semgrep configuration and credentials such as `SEMGREP_APP_TOKEN`. Use `--run-sast FALSE` to disable SAST for a run. Original SAST results are retained without adding a separate score.
 
-## mini-swe-agent 与 uv
+## mini-swe-agent and uv
 
-两者兼容。旧 ARVO 镜像的 glibc 较老，部分新依赖缺少匹配 wheel，源码构建会要求 Rust 等工具。安装适配只处理依赖：先选择兼容 wheel，再单独安装 editable mini-swe-agent 源码；生成逻辑使用 Harbor 官方集成，benchmark 评估逻辑保持原样。
+mini-swe-agent works with uv. Older ARVO images use older glibc versions, and some newer dependencies lack compatible wheels; building them from source can require tools such as Rust. The installation adapter handles dependency compatibility by selecting compatible wheels before separately installing editable mini-swe-agent source. Generation uses Harbor's official integration, and benchmark evaluation logic remains unchanged.
