@@ -37,30 +37,28 @@
 
 ## 🛠️ Quick Start
 
-<!-- The entry downloads tasks and their original evaluator from the HF [`habour-preview` branch](https://huggingface.co/datasets/iCSawyer/SecureVibeBench/tree/habour-preview), runs mini-swe-agent through Harbor, and reports functional and security metrics. Benchmark instructions, tests, and scoring remain unchanged. The existing HF default dataset is unaffected. -->
-
 ### 1. Prepare the environment
 
-Install Python 3.8+ (available as `python3`), Git, Docker and Docker Compose, and ensure the Docker daemon is running. From the repository root, run:
+Prerequisites: Python 3.8+ (`python3`), Git, and Docker with Compose and a running daemon. From the repository root:
 
 ```bash
 bash evaluation/prepare.sh
 ```
 
-The script **first downloads and verifies the HF tasks and evaluator** using only the system Python standard library. It then installs uv if needed (using curl or wget), **automatically clones official mini-swe-agent `v2.4.6`** into `evaluation/mini-swe-agent/`, and uses uv to prepare Python 3.12 and locked dependencies, including editable mini-swe-agent. The system Python is only used to bootstrap the dataset download; uv manages the project environment and dependencies. Existing source and local edits are preserved. No model API key is needed for this step.
+This first downloads and verifies the HF bundle, then installs uv if needed (requires curl or wget), clones mini-swe-agent `v2.4.6` into `evaluation/mini-swe-agent/`, and prepares Python 3.12 and locked dependencies with uv.
 
 ### 2. Configure the model
 
-For a model provider, export its API key and choose a `provider/model` identifier:
+Set your provider's API key and model:
 
 ```bash
 export OPENAI_API_KEY='<your-api-key>'
 export MODEL='openai/<model-name>'
 ```
 
-Use the corresponding key and model prefix for other providers, such as `ANTHROPIC_API_KEY` and `anthropic/<model-name>`.
+For other providers, use the matching key and prefix, e.g. `ANTHROPIC_API_KEY` and `anthropic/<model-name>`.
 
-For your own model served through an OpenAI-compatible API, configure its model name, endpoint and key instead:
+Or configure your own OpenAI-compatible endpoint:
 
 ```bash
 export MODEL='openai/<your-served-model-name>'
@@ -68,7 +66,7 @@ export MODEL_BASE_URL='http://<model-server>:8000/v1'
 export MODEL_API_KEY='<your-endpoint-api-key>'
 ```
 
-The endpoint must be reachable from the task containers. If your server does not require authentication, use a placeholder key such as `unused`.
+The endpoint must be reachable from task containers. Use `unused` as the key if authentication is disabled.
 
 ### 3. Run evaluation
 
@@ -78,13 +76,13 @@ Run one task:
 bash evaluation/run.sh "$MODEL" --task 992
 ```
 
-Run all 105 tasks by omitting `--task`:
+Run all 105 tasks:
 
 ```bash
 bash evaluation/run.sh "$MODEL"
 ```
 
-For your own OpenAI-compatible endpoint, pass the endpoint options with either command:
+For your own endpoint, add:
 
 ```bash
 bash evaluation/run.sh "$MODEL" --task 992 \
@@ -93,9 +91,9 @@ bash evaluation/run.sh "$MODEL" --task 992 \
   --api-format openai_chat_completions
 ```
 
-Omit `--task 992` in this command to evaluate your own model on all tasks. Evaluation reuses the HF cache and synchronizes locked dependencies on each run.
+Omit `--task 992` to run all tasks with your endpoint.
 
-Final metrics: `dev/runs/<job>/summary.json`. The same directory contains Harbor's original results, trajectories, patches, and benchmark reports. See [evaluation/README.md](./evaluation/README.md) for API endpoints and options.
+Results: `dev/runs/<job>/summary.json`, with trajectories, patches, and reports in the same job directory. See [evaluation/README.md](./evaluation/README.md) for more options.
 
 ```text
 data/          One Harbor task example
@@ -123,7 +121,7 @@ data/securevibebench-992/
             └── 992.sh
 ```
 
-The original task instructions, tests, and evaluation code are preserved. This example requires the accompanying host-side verifier. Use [evaluation/](./evaluation/README.md) to run the benchmark; it downloads the complete tasks and evaluator from the HF `habour-preview` branch.
+This example preserves the original instructions, tests, and evaluator. Run it through [evaluation/](./evaluation/README.md), which downloads the complete HF bundle and uses its host-side verifier.
 
 
 <a id="nav-overview"></a>
