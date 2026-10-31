@@ -41,13 +41,9 @@ Requirements: Python 3.12+, Linux x86_64, Docker Engine with Compose, and a runn
 
 ### Install
 
-We recommend [uv](https://docs.astral.sh/uv/getting-started/installation/) for managing Python environments. pip also works; uv is not installed as a package dependency.
+We recommend [uv](https://docs.astral.sh/uv/getting-started/installation/) for managing Python environments.
 
 ```bash
-# Run without installing into your current environment
-uvx securevibebench --help
-
-# Or install into an active virtual environment
 uv pip install securevibebench
 
 # Or with pip
@@ -64,24 +60,19 @@ cd SecureVibeBench
 uv sync  # editable install + development tools
 ```
 
-Use `uv run securevibebench eval ...` for the development checkout, or activate `.venv/bin/activate`.
-
-Without uv, use `python tools/install.py --dev --installer pip` in an active virtual environment.
-
 ### Run evaluation
 
 ```bash
 export OPENAI_API_KEY='<your-api-key>'
 export MODEL='openai/<model-name>'
 
-# With uv, without a persistent installation
-uvx securevibebench eval --model "$MODEL" --task 992
-
-# Or after installing the package
 securevibebench eval --model "$MODEL" --task 992
+securevibebench eval --model "$MODEL" # all 105 tasks
 ```
 
-Omit `--task 992` to run all 105 tasks. Static analysis is disabled by default. Enable it with `--run-sast TRUE` and configure Semgrep credentials such as `SEMGREP_APP_TOKEN`. Results are saved to `runs/<job>/summary.json` under the current working directory.
+Results are saved to `runs/<job>/summary.json` under the current working directory.
+
+We disable static vulnerability analysis by default. Enable it with `--run-sast TRUE` and configure Semgrep credentials such as `SEMGREP_APP_TOKEN`. 
 
 > [!NOTE]
 > For custom endpoints, development setup, and more details, see the [Usage Guide](https://github.com/iCSawyer/SecureVibeBench/blob/main/docs/README.md). Run `securevibebench eval --help` for evaluation options.
