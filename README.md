@@ -45,7 +45,8 @@ We recommend [uv](https://docs.astral.sh/uv/getting-started/installation/) for m
 
 ```bash
 uv pip install securevibebench
-
+```
+```bash
 # Or with pip
 pip install securevibebench
 ```
@@ -67,7 +68,7 @@ export OPENAI_API_KEY='<your-api-key>'
 export MODEL='openai/<model-name>'
 
 securevibebench eval --model "$MODEL" --task 992
-securevibebench eval --model "$MODEL" # all 105 tasks
+# securevibebench eval --model "$MODEL" # all 105 tasks
 ```
 
 Results are saved to `runs/<job>/summary.json` under the current working directory.
