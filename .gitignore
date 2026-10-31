@@ -1,6 +1,7 @@
 # Local development, generated artifacts, and editable dependency checkout.
 /dev/
 /evaluation/mini-swe-agent/
+/evaluation/resources.tar.gz
 no_github/
 *.hash
 

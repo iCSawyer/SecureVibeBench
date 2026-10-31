@@ -1,7 +1,7 @@
-"""Persistent Harbor entry point delegating to the verifier downloaded from HF.
+"""Persistent Harbor entry point delegating to the packaged original verifier.
 
-This module loads the published evaluator bridge without importing local dev/
-or reimplementing any scoring. Its stable import path also works when Harbor
+This module loads the published evaluator bridge from packaged resources
+without reimplementing scoring. Its stable import path also works when Harbor
 resumes a saved job in a new process.
 """
 
@@ -18,23 +18,23 @@ from harbor.verifier.base import BaseVerifier
 
 
 def load_verifier(bundle: Path, expected_sha256: str | None = None):
-    path = bundle.resolve() / "dev" / "harbor_verifier.py"
+    path = bundle.resolve() / "evaluator" / "harbor_verifier.py"
     content = path.read_bytes()
     digest = hashlib.sha256(content).hexdigest()
     if expected_sha256 is not None and digest != expected_sha256:
-        raise ValueError(f"Downloaded verifier checksum mismatch: {path}")
+        raise ValueError(f"Packaged verifier checksum mismatch: {path}")
     name = "_svb_hf_verifier_" + hashlib.sha256(str(path).encode()).hexdigest()[:16] + "_" + digest[:16]
     if name in sys.modules:
         return sys.modules[name]
     spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
-        raise ImportError(f"Cannot load the downloaded evaluator bridge: {path}")
+        raise ImportError(f"Cannot load the packaged evaluator bridge: {path}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
     try:
         spec.loader.exec_module(module)
         if not issubclass(module.SecureVibeBenchVerifier, BaseVerifier):
-            raise ValueError("The downloaded verifier is not a Harbor BaseVerifier")
+            raise ValueError("The packaged verifier is not a Harbor BaseVerifier")
     except BaseException:
         sys.modules.pop(name, None)
         raise
@@ -51,7 +51,7 @@ class HuggingFaceVerifier(BaseVerifier):
         self.bundle = Path(bundle_dir).resolve()
         task_dir = self.task.paths.task_dir.resolve()
         if not task_dir.is_relative_to(self.bundle / "data"):
-            raise ValueError("Evaluation task must come from the downloaded HF bundle")
+            raise ValueError("Evaluation task must come from the packaged dataset")
         # Do not let importing the published parser create new task inputs and
         # change the checksum seen by a later rollout of the same HF task.
         sys.dont_write_bytecode = True

@@ -1,0 +1,11 @@
+include LICENSE THIRD_PARTY_NOTICES.md README.md uv.lock
+include build_backend.py
+recursive-include evaluation *.py *.yaml *.sh *.md
+include evaluation/resources.json evaluation/mini-source.tar.gz
+exclude evaluation/resources.tar.gz
+recursive-include tools *.py
+recursive-include docs *.md
+recursive-include tests *.py
+prune evaluation/mini-swe-agent
+prune dev
+global-exclude __pycache__ *.py[cod] .env .env.*

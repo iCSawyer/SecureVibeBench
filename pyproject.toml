@@ -1,33 +1,52 @@
 [build-system]
 requires = ["setuptools>=77"]
-build-backend = "setuptools.build_meta"
+build-backend = "build_backend"
+backend-path = ["."]
 
 [project]
-name = "securevibebench-evaluation"
-version = "0.1.0"
-description = "HF-first Harbor evaluation using editable mini-swe-agent"
+name = "securevibebench"
+version = "0.2.0"
+description = "Generate and evaluate secure coding agents on SecureVibeBench"
+readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing",
+]
 dependencies = [
     "harbor>=0.25.0,<0.26.0",
-    "mini-swe-agent>=2.4.6",
+    "mini-swe-agent==2.4.6",
     "huggingface-hub>=0.34.3",
     "docker>=7.1.0",
     "pyyaml>=6.0.2",
     "python-dotenv>=1.1.1",
 ]
 
+[dependency-groups]
+dev = ["build>=1.2.2", "twine>=6.0"]
+
 [project.scripts]
+securevibebench = "securevibebench_evaluation.cli:main"
 svb-evaluate = "securevibebench_evaluation.run:main"
+
+[project.urls]
+Homepage = "https://github.com/iCSawyer/SecureVibeBench"
+Documentation = "https://github.com/iCSawyer/SecureVibeBench/blob/main/docs/README.md"
+Issues = "https://github.com/iCSawyer/SecureVibeBench/issues"
+Dataset = "https://huggingface.co/datasets/iCSawyer/SecureVibeBench"
 
 [tool.setuptools]
 packages = ["securevibebench_evaluation"]
+include-package-data = false
 
 [tool.setuptools.package-dir]
 securevibebench_evaluation = "evaluation"
 
 [tool.setuptools.package-data]
-securevibebench_evaluation = ["harbor.yaml"]
-
-[tool.uv.sources]
-mini-swe-agent = { path = "evaluation/mini-swe-agent", editable = true }
+securevibebench_evaluation = ["harbor.yaml", "resources.json", "resources.tar.gz"]

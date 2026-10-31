@@ -1,5 +1,5 @@
-# Native Harbor JobConfig template. run.py downloads the HF bundle first,
-# inserts its absolute task paths and published evaluator, and supplies a model.
+# Native Harbor JobConfig template. run.py uses the packaged tasks and evaluator,
+# inserts their absolute cache paths, and supplies a model.
 agents:
   - import_path: securevibebench_evaluation.editable_mini:EditableMiniSweAgent
     override_setup_timeout_sec: 1800
