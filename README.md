@@ -103,7 +103,7 @@ To comprehensively evaluate the generated code of code agents, we conduct (i) **
 
 ## 📚 Citation
 
-If you find SecureVibeBench useful, please cite:
+If you find our project useful, please consider citing our paper: 
 
 ```bibtex
 @inproceedings{chen2026securevibebench,
@@ -125,7 +125,7 @@ If you find SecureVibeBench useful, please cite:
 
 ## 🙏 Acknowledgments
 
-Our work builds on [OSS-Fuzz](https://github.com/google/oss-fuzz) and [ARVO](https://arxiv.org/abs/2408.02153).
+Our work builds on the following excellent works, and please consider citing them: [OSS-Fuzz](https://github.com/google/oss-fuzz), [ARVO](https://arxiv.org/abs/2408.02153), [habour](https://github.com/harbor-framework/harbor), and [mini-SWE-agent](https://github.com/SWE-agent/mini-swe-agent).
 
 ```bibtex
 @misc{mei2024arvoatlasreproduciblevulnerabilities,
@@ -144,5 +144,25 @@ Our work builds on [OSS-Fuzz](https://github.com/google/oss-fuzz) and [ARVO](htt
   title  = {$\{$OSS-Fuzz$\}$-Google's continuous fuzzing service for open source software},
   author = {Serebryany, Kostya},
   year   = {2017}
+}
+```
+
+```
+@software{Harbor_Framework,
+author = {{Harbor Framework Team}},
+title = {{Harbor: A framework for evaluating and optimizing agents and models in container environments}},
+year = {2026},
+doi = {10.5281/zenodo.20953922},
+url = {https://doi.org/10.5281/zenodo.20953922}
+}
+```
+
+```
+@inproceedings{yang2024sweagent,
+  title={{SWE}-agent: Agent-Computer Interfaces Enable Automated Software Engineering},
+  author={John Yang and Carlos E Jimenez and Alexander Wettig and Kilian Lieret and Shunyu Yao and Karthik R Narasimhan and Ofir Press},
+  booktitle={The Thirty-eighth Annual Conference on Neural Information Processing Systems},
+  year={2024},
+  url={https://arxiv.org/abs/2405.15793}
 }
 ```
