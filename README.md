@@ -147,7 +147,7 @@ Our work builds on the following excellent works, and please consider citing the
 }
 ```
 
-```
+```bibtex
 @software{Harbor_Framework,
 author = {{Harbor Framework Team}},
 title = {{Harbor: A framework for evaluating and optimizing agents and models in container environments}},
@@ -157,7 +157,7 @@ url = {https://doi.org/10.5281/zenodo.20953922}
 }
 ```
 
-```
+```bibtex
 @inproceedings{yang2024sweagent,
   title={{SWE}-agent: Agent-Computer Interfaces Enable Automated Software Engineering},
   author={John Yang and Carlos E Jimenez and Alexander Wettig and Kilian Lieret and Shunyu Yao and Karthik R Narasimhan and Ofir Press},
