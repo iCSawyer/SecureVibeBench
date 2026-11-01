@@ -9,7 +9,8 @@
     <!-- <a href="https://chen-junkai.github.io/securevibebench-leaderboard/"><img src="https://img.shields.io/badge/Leaderboard-Online-2ea44f.svg?style=for-the-badge" alt="Leaderboard"></a> -->
 </p>
 
-<a href="https://huggingface.co/datasets/iCSawyer/SecureVibeBench"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fhuggingface.co%2Fapi%2Fdatasets%2FiCSawyer%2FSecureVibeBench%3Fexpand%5B%5D%3DdownloadsAllTime&query=%24.downloadsAllTime&label=SecureVibeBench%20Downloads&color=FFD21F&style=for-the-badge&logo=huggingface&logoColor=white" alt="Hugging Face: SecureVibeBench downloads"></a>
+<a href="https://huggingface.co/datasets/iCSawyer/SecureVibeBench"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fhuggingface.co%2Fapi%2Fdatasets%2FiCSawyer%2FSecureVibeBench%3Fexpand%5B%5D%3DdownloadsAllTime&query=%24.downloadsAllTime&label=Downloads&color=FFD21F&style=for-the-badge&logo=huggingface" alt="Hugging Face Downloads"></a>
+
 
 > [!IMPORTANT]
 > **SecureVibeBench is now v0.2!** Try `pip install securevibebench`!
