@@ -4,12 +4,13 @@
     <img src="https://img.shields.io/badge/Version-v0.2-blue.svg?style=for-the-badge" alt="Version: v0.2">
     <a href="https://2026.aclweb.org/"><img src="https://img.shields.io/badge/Venue-ACL%202026-2ea44f.svg?style=for-the-badge" alt="Venue: ACL 2026"></a>
     <a href="https://arxiv.org/abs/2509.22097"><img src="https://img.shields.io/badge/arXiv-2509.22097-b31b1b.svg?style=for-the-badge" alt="arXiv"></a>
-    <a href="https://huggingface.co/datasets/iCSawyer/SecureVibeBench"><img src="https://img.shields.io/badge/HF-SecureVibeBench-FFD21F.svg?style=for-the-badge&logo=huggingface" alt="Hugging Face: SecureVibeBench"></a>
+    <a href="https://huggingface.co/datasets/iCSawyer/SecureVibeBench"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fhuggingface.co%2Fapi%2Fdatasets%2FiCSawyer%2FSecureVibeBench%3Fexpand%255B%255D%3DdownloadsAllTime&query=%24.downloadsAllTime&label=Downloads&color=FFD21F&style=for-the-badge&logo=huggingface" alt="Hugging Face Downloads"></a>
+    <!-- <a href="https://huggingface.co/datasets/iCSawyer/SecureVibeBench"><img src="https://img.shields.io/badge/HF-SecureVibeBench-FFD21F.svg?style=for-the-badge&logo=huggingface" alt="Hugging Face: SecureVibeBench"></a> -->
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License MIT"></a>
     <!-- <a href="https://chen-junkai.github.io/securevibebench-leaderboard/"><img src="https://img.shields.io/badge/Leaderboard-Online-2ea44f.svg?style=for-the-badge" alt="Leaderboard"></a> -->
 </p>
 
-<a href="https://huggingface.co/datasets/iCSawyer/SecureVibeBench"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fhuggingface.co%2Fapi%2Fdatasets%2FiCSawyer%2FSecureVibeBench%3Fexpand%255B%255D%3DdownloadsAllTime&query=%24.downloadsAllTime&label=Downloads&color=FFD21F&style=for-the-badge&logo=huggingface" alt="Hugging Face Downloads"></a>
+
 
 
 > [!IMPORTANT]
