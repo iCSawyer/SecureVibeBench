@@ -1,5 +1,4 @@
-include LICENSE THIRD_PARTY_NOTICES.md README.md uv.lock
-include build_backend.py
+include LICENSE README.md uv.lock
 recursive-include evaluation *.py *.yaml *.sh *.md
 include evaluation/resources.json evaluation/mini-source.tar.gz
 exclude evaluation/resources.tar.gz

@@ -14,7 +14,7 @@ import tempfile
 from setuptools import build_meta as _backend
 
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _prepare_resources() -> None:
