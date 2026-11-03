@@ -28,7 +28,7 @@ class InstalledPackageTests(unittest.TestCase):
         ])
 
     def test_help_runs_outside_the_repository_without_creating_a_cache(self):
-        cache = self.directory / "xdg-cache"
+        cache = self.directory / ".cache"
         result = subprocess.run(
             [sys.executable, "-m", "securevibebench_evaluation", "--help"],
             cwd=self.directory, env={**os.environ, "XDG_CACHE_HOME": str(cache)},
@@ -47,11 +47,12 @@ class InstalledPackageTests(unittest.TestCase):
         self.assertNotIn("--hf-revision", evaluation.stdout)
         self.assertFalse(cache.exists())
 
-    def test_defaults_use_user_cache_and_current_working_directory(self):
-        with mock.patch.dict(os.environ, {"XDG_CACHE_HOME": str(self.directory)}):
+    def test_defaults_keep_caches_and_runs_in_the_current_working_directory(self):
+        with mock.patch.object(Path, "cwd", return_value=self.directory):
             args = cli.build_parser().parse_args(["eval", "--model", "openai/test-model"])
-        self.assertEqual(args.cache_dir, self.directory / "securevibebench/resources")
-        self.assertEqual(args.jobs_dir, Path.cwd() / "runs")
+            self.assertEqual(run.project_cache_dir(), self.directory / ".cache/securevibebench")
+        self.assertEqual(args.cache_dir, self.directory / ".cache/securevibebench/resources")
+        self.assertEqual(args.jobs_dir, self.directory / "runs")
 
     def test_runtime_entrypoint_imports(self):
         from harbor.job import Job
@@ -104,7 +105,7 @@ class InstalledPackageTests(unittest.TestCase):
         self.assertIs(agent_class.run, MiniSweAgent.run)
         self.assertEqual(config.agents[0].kwargs["version"], "2.4.6")
         self.assertEqual(Path(config.agents[0].kwargs["toolchain_cache_dir"]),
-                         run.user_cache_dir() / "agent-toolchain")
+                         run.project_cache_dir().resolve() / "agent-toolchain")
         self.assertEqual(verifier.ROOT, dataset)
         self.assertEqual(Path(config.verifier.kwargs["baseline_dir"]), dataset.parent / "baselines")
         self.assertEqual(config.verifier.kwargs["run_sast"], "FALSE")

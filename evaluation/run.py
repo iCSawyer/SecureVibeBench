@@ -20,8 +20,9 @@ import sys
 HERE = Path(__file__).resolve().parent
 
 
-def user_cache_dir() -> Path:
-    return Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "securevibebench"
+def project_cache_dir() -> Path:
+    """Runtime caches live with the project, next to runs/."""
+    return Path.cwd() / ".cache" / "securevibebench"
 
 
 def positive_int(value: str) -> int:
@@ -43,7 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--attempts", type=positive_int, default=1, help=argparse.SUPPRESS)
     parser.add_argument("--jobs-dir", type=Path, default=Path.cwd() / "runs", help=argparse.SUPPRESS)
     parser.add_argument("--job-name", help=argparse.SUPPRESS)
-    parser.add_argument("--cache-dir", type=Path, default=user_cache_dir() / "resources", help=argparse.SUPPRESS)
+    parser.add_argument("--cache-dir", type=Path, default=project_cache_dir() / "resources", help=argparse.SUPPRESS)
     parser.add_argument("--base-url", help="Optional OpenAI-compatible or provider API endpoint")
     parser.add_argument("--api-key-name", help="Environment variable NAME containing the API key")
     parser.add_argument("--api-format", choices=["openai_chat_completions", "openai_responses",
@@ -95,7 +96,7 @@ def build_config(args: argparse.Namespace, *, bundle: Path, mini_version: str | 
     agent["model_name"] = args.model
     agent.setdefault("kwargs", {})["version"] = mini_version
     agent["kwargs"]["source_dir"] = str(bundle.parent / "mini-swe-agent")
-    agent["kwargs"]["toolchain_cache_dir"] = str(user_cache_dir() / "agent-toolchain")
+    agent["kwargs"]["toolchain_cache_dir"] = str(project_cache_dir().resolve() / "agent-toolchain")
     for source, target in (("base_url", "base_url"), ("api_key_name", "model_api_key_name"),
                            ("api_format", "model_api_format")):
         value = getattr(args, source)

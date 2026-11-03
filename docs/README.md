@@ -62,7 +62,7 @@ The endpoint must be reachable from task containers. Set the key to `unused` if 
 
 ## Agent installation cache
 
-Each task container needs uv, a managed Python, and mini-swe-agent. The first task downloads and installs them, then saves the result to `~/.cache/securevibebench/agent-toolchain/`; later tasks restore that archive instead of downloading again (about 25 seconds instead of several minutes). Archives are keyed by the container's `$HOME`, CPU architecture, and C library, so images that cannot share one get their own. If a restore fails, the task installs from scratch. Delete the directory to force a fresh install.
+Each task container needs uv, a managed Python, and mini-swe-agent. The first task downloads and installs them, then saves the result to `.cache/securevibebench/agent-toolchain/` in the current working directory; later tasks restore that archive instead of downloading again (about 25 seconds instead of several minutes). Archives are keyed by the container's `$HOME`, CPU architecture, and C library, so images that cannot share one get their own. If a restore fails, the task installs from scratch. Delete the directory to force a fresh install.
 
 ## Interrupt and resume
 
@@ -80,7 +80,7 @@ Results are written to `runs/<job>/summary.json` under the current working direc
 
 Since v0.2.1 the functional-test parser reads parallel `ctest -j` output per test. The Wireshark tasks interleave output from concurrent tests, and the original parser could pair a test with another test's status, misreporting passes and failures. Functional results for those tasks can therefore differ from v0.2.0 and v0.1; other tasks are unaffected. Locally cached baselines are rebuilt automatically.
 
-Downloaded data is cached in `~/.cache/securevibebench/huggingface/`; installed resources are extracted to `~/.cache/securevibebench/resources/`. Both respect `XDG_CACHE_HOME`. The package's `resources.json` records upstream commits and checksums. No `dev/` directory is required.
+Runtime caches live next to `runs/` in the current working directory: resources and functional-test baselines in `.cache/securevibebench/resources/`, and the agent toolchain in `.cache/securevibebench/agent-toolchain/`. The dataset downloaded during installation is cached in `~/.cache/securevibebench/huggingface/` (respects `XDG_CACHE_HOME`). The package's `resources.json` records upstream commits and checksums. No `dev/` directory is required.
 
 ## Developer checks
 
