@@ -90,4 +90,4 @@ uv build --sdist
 uv run twine check dist/*.tar.gz
 ```
 
-With pip, use `python -m unittest discover -s tests -v`, `python -m build --sdist`, and `python -m twine check dist/*.tar.gz` instead. Publish the source archive (`dist/*.tar.gz`) to PyPI. Development dependencies are installed by `tools/install.py --dev`. To refresh release resources, run `python tools/bundle_resources.py` (requires Git).
+With pip, use `python -m unittest discover -s tests -v`, `python -m build --sdist`, and `python -m twine check dist/*.tar.gz` instead. Pushing a `v<version>` tag publishes the source archive to PyPI through `.github/workflows/package.yml`. Development dependencies are installed by `tools/install.py --dev`. To refresh release resources, run `python tools/bundle_resources.py` (requires Git).
