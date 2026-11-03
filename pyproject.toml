@@ -6,7 +6,7 @@ backend-path = ["tools"]
 [project]
 name = "securevibebench"
 version = "0.2.2"
-description = "Generate and evaluate secure coding agents on SecureVibeBench"
+description = "Evaluate Secure Agentic Coding Abilities of LLMs on SecureVibeBench"
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
