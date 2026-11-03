@@ -1,12 +1,12 @@
 # SecureVibeBench
 
 <p align="left">
-    <img src="https://img.shields.io/badge/Version-v0.2-blue.svg?style=for-the-badge" alt="Version: v0.2">
+    <!-- <img src="https://img.shields.io/badge/Version-v0.2-blue.svg?style=for-the-badge" alt="Version: v0.2"> -->
     <a href="https://2026.aclweb.org/"><img src="https://img.shields.io/badge/Venue-ACL%202026-2ea44f.svg?style=for-the-badge" alt="Venue: ACL 2026"></a>
     <a href="https://arxiv.org/abs/2509.22097"><img src="https://img.shields.io/badge/arXiv-2509.22097-b31b1b.svg?style=for-the-badge" alt="arXiv"></a>
     <a href="https://huggingface.co/datasets/iCSawyer/SecureVibeBench"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fhuggingface.co%2Fapi%2Fdatasets%2FiCSawyer%2FSecureVibeBench%3Fexpand%255B%255D%3DdownloadsAllTime&query=%24.downloadsAllTime&label=Downloads&color=FFD21F&style=for-the-badge&logo=huggingface" alt="Hugging Face Downloads"></a>
     <!-- <a href="https://huggingface.co/datasets/iCSawyer/SecureVibeBench"><img src="https://img.shields.io/badge/HF-SecureVibeBench-FFD21F.svg?style=for-the-badge&logo=huggingface" alt="Hugging Face: SecureVibeBench"></a> -->
-    <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License MIT"></a>
+    <!-- <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License MIT"></a> -->
     <!-- <a href="https://chen-junkai.github.io/securevibebench-leaderboard/"><img src="https://img.shields.io/badge/Leaderboard-Online-2ea44f.svg?style=for-the-badge" alt="Leaderboard"></a> -->
 </p>
 
@@ -14,14 +14,16 @@
 
 
 > [!IMPORTANT]
-> **SecureVibeBench is now v0.2!** Try `pip install securevibebench`!
+> **SecureVibeBench is now v0.2!** Just try `pip install securevibebench`!
 >
-> We refer to the original release and evaluation workflow as **v0.1**, and **results obtained with v0.2 may differ from v0.1.** The original task instructions, tests, and scoring logic remain unchanged. Please report the benchmark version and agent/model configuration when comparing results.
+> We are updating the evaluation criteria and workflow currently, so **the results obtained may differ from v0.1**.
+> Please report any usage issues you encouter via Issues or my [email](mailto:junkaichen@smu.edu.sg), and we will investigate and fix as soon as possible. 🙏
 
 <p align="left">
     ✨&nbsp;<a href="#nav-news">News</a>
     | 🛠️&nbsp;<a href="#nav-quick-start">Quick Start</a>
     | 🔭&nbsp;<a href="#nav-overview">Overview</a>
+    | 🗺️&nbsp;<a href="#nav-roadmap">Roadmap</a>
     | 📚&nbsp;<a href="#nav-citation">Citation</a>
     | 🙏&nbsp;<a href="#nav-acknowledgments">Acknowledgments</a>
 </p>
@@ -30,7 +32,7 @@
 
 ## ✨ News
 
-- **[2026-10-29]** We updated to **v0.2**, introducing a PyPI package, Harbor-format tasks, and unified model generation and evaluation. The original version is now referred to as **v0.1**; results may differ between versions.
+- **[2026-10-29]** We updated to **v0.2**, introducing a PyPI package, Harbor-format tasks, and unified model evaluation. The original version is now referred to as **v0.1**.
 <!-- - **[2026-06-06]** 🏆 We released the online [Leaderboard](https://chen-junkai.github.io/securevibebench-leaderboard/) for SecureVibeBench.
 - **[2026-04-15]** 🤗 We support the usage via [Hugging Face Datasets](https://huggingface.co/datasets/iCSawyer/SecureVibeBench). 
 - **[2026-04-11]** 🚀 We released code and data for SecureVibeBench. -->
@@ -41,7 +43,7 @@
 
 ## 🛠️ Quick Start
 
-Requirements: Python 3.12+, Linux x86_64, Docker Engine with Compose, and a running Docker daemon.
+Requirements: Python 3.12+, Linux, and Docker.
 
 ### Install
 
@@ -55,7 +57,7 @@ uv pip install securevibebench
 pip install securevibebench
 ```
 
-Installation downloads all 105 tasks and the original evaluator from Hugging Face. Task containers are prepared when evaluation starts.
+Task containers will be prepared when the real evaluation starts.
 
 ### For development
 
@@ -101,6 +103,13 @@ To comprehensively evaluate the generated code of code agents, we conduct (i) **
 > - First SWE-bench-level, peer-reviewed benchmark for secure vibe coding.
 > - Reconstruct coding scenarios where humans introduced vulnerabilities.
 > - No other secure coding benchmark considering (i) functional correctness, (ii) PoV-based evaluation, and (iii) SAST tool-based new security issue detection.
+
+
+<a id="nav-roadmap"></a>
+
+## 🗺️ Roadmap
+
+- [ ] **Cascaded LLM-as-a-judge.** Add an LLM judge as a final stage after the functional checks. Its verdicts would be reported separately so they don't change the existing scores.
 
 
 <a id="nav-citation"></a>

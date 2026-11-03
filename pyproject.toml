@@ -5,7 +5,7 @@ backend-path = ["."]
 
 [project]
 name = "securevibebench"
-version = "0.2.0"
+version = "0.2.1"
 description = "Generate and evaluate secure coding agents on SecureVibeBench"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -21,8 +21,6 @@ classifiers = [
 ]
 dependencies = [
     "harbor>=0.25.0,<0.26.0",
-    "mini-swe-agent==2.4.6",
-    "huggingface-hub>=0.34.3",
     "docker>=7.1.0",
     "pyyaml>=6.0.2",
     "python-dotenv>=1.1.1",

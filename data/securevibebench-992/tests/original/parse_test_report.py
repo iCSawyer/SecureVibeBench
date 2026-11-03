@@ -1536,6 +1536,21 @@ def parse_test_output_harfbuzz(s: str) -> ParseResult:
     return NumberResult(PassNumber=0, FailNumber=0, UnknownNumber=0)
 
 
+def split_ctest_streams(lines: List[str]) -> List[List[str]]:
+    """Group `ctest --verbose` lines by their "N:" test prefix.
+
+    With `ctest -j`, concurrent tests interleave their output, so a case name
+    and its status line are only adjacent within the same test's own lines.
+    """
+    rx_prefix = re.compile(r"^\s*(\d+):\s?(.*)$")
+    streams: Dict[Optional[str], List[str]] = {}
+    for line in lines:
+        m = rx_prefix.match(line)
+        key, text = (m.group(1), m.group(2)) if m else (None, line)
+        streams.setdefault(key, []).append(text)
+    return list(streams.values())
+
+
 def parse_test_output_wireshark(s: str) -> ParseResult:
     cut_pos = s.find("Test project")
     if cut_pos != -1:
@@ -1575,6 +1590,7 @@ def parse_test_output_wireshark(s: str) -> ParseResult:
     # Match: first line has only "test_name (suite)"; next line has description + "... STATUS"
     rx_head_only = re.compile(
         r"""^\s*(?:\d+:)?\s*
+            (?!(?:OK|FAILED)\s*\()                 # unittest summaries, e.g. "OK (skipped=2)"
             (?P<name>[A-Za-z0-9_.:\-\[\]/]+)\s*\((?P<suite>[^)]+)\)\s*$
         """,
         re.X,
@@ -1583,39 +1599,39 @@ def parse_test_output_wireshark(s: str) -> ParseResult:
         r"""^\s*(?:\d+:)?\s*.*?\.\.\.\s*(?P<status>[A-Za-z ]+)(?:\s+['"].*?['"])?\s*$"""
     )
 
-    pending_name = None  # previous case name for the two-line style
-
     lines = s.splitlines()
-    for line in lines:
-        m = rx_single.match(line)
-        if m:
-            name = f"{m.group('name')} ({m.group('suite')})"
-            b = status_bucket(m.group("status"))
-            if b == "pass":
-                pass_list.append(name)
-            elif b == "fail":
-                fail_list.append(name)
-            elif b == "unknown":
-                unknown_list.append(name)
-            continue
-
-        h = rx_head_only.match(line)
-        if h:
-            pending_name = f"{h.group('name')} ({h.group('suite')})"
-            continue
-
-        if pending_name:
-            f2 = rx_follow_status.match(line)
-            if f2:
-                b = status_bucket(f2.group("status"))
+    for stream in split_ctest_streams(lines):
+        pending_name = None  # previous case name for the two-line style
+        for line in stream:
+            m = rx_single.match(line)
+            if m:
+                name = f"{m.group('name')} ({m.group('suite')})"
+                b = status_bucket(m.group("status"))
                 if b == "pass":
-                    pass_list.append(pending_name)
+                    pass_list.append(name)
                 elif b == "fail":
-                    fail_list.append(pending_name)
+                    fail_list.append(name)
                 elif b == "unknown":
-                    unknown_list.append(pending_name)
-                pending_name = None  # clear
+                    unknown_list.append(name)
                 continue
+
+            h = rx_head_only.match(line)
+            if h:
+                pending_name = f"{h.group('name')} ({h.group('suite')})"
+                continue
+
+            if pending_name:
+                f2 = rx_follow_status.match(line)
+                if f2:
+                    b = status_bucket(f2.group("status"))
+                    if b == "pass":
+                        pass_list.append(pending_name)
+                    elif b == "fail":
+                        fail_list.append(pending_name)
+                    elif b == "unknown":
+                        unknown_list.append(pending_name)
+                    pending_name = None  # clear
+                    continue
 
     # If per-case results were obtained, return first (and handle (3) the boolean when only one case)
     total_items = len(pass_list) + len(fail_list) + len(unknown_list)

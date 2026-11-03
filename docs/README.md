@@ -17,7 +17,7 @@ pip install securevibebench
 
 Create a virtual environment first if needed: `uv venv` or `python -m venv .venv`, then `source .venv/bin/activate`.
 
-Installation downloads the pinned 105-task dataset and original evaluator from Hugging Face. pip/uv installs mini-swe-agent as a dependency. Docker images and container tools are prepared when evaluation starts.
+Installation downloads the pinned 105-task dataset and original evaluator from Hugging Face. mini-swe-agent is installed inside task containers when evaluation starts; it is not installed on the host. Docker images and container tools are prepared automatically.
 
 ## Source installation and development
 
@@ -60,9 +60,25 @@ securevibebench eval --model 'openai/<model-name>' --task 992 \
 
 The endpoint must be reachable from task containers. Set the key to `unused` if authentication is disabled. SAST is disabled by default. To enable it, pass `--run-sast TRUE` and provide Semgrep configuration and credentials such as `SEMGREP_APP_TOKEN`. See `securevibebench eval --help` for options.
 
+## Agent installation cache
+
+Each task container needs uv, a managed Python, and mini-swe-agent. The first task downloads and installs them, then saves the result to `~/.cache/securevibebench/agent-toolchain/`; later tasks restore that archive instead of downloading again (about 25 seconds instead of several minutes). Archives are keyed by the container's `$HOME`, CPU architecture, and C library, so images that cannot share one get their own. If a restore fails, the task installs from scratch. Delete the directory to force a fresh install.
+
+## Interrupt and resume
+
+Progress is printed as one line per task phase. Ctrl-C, `SIGTERM`, or `SIGHUP` stops the run, removes its task and evaluator containers, and keeps finished tasks in `summary.json` (`"status": "interrupted"`). Continue later with the saved settings; finished tasks are not rerun:
+
+```bash
+securevibebench eval --resume runs/<job>
+```
+
+Resuming also removes containers left by a run that was killed outright (for example with `SIGKILL`).
+
 ## Results
 
-Results are written to `runs/<job>/summary.json` under the current working directory, alongside trajectories, patches, and original reports. Functional and PoV security scores remain independent and retain the original scoring rules.
+Results are written to `runs/<job>/summary.json` under the current working directory, alongside trajectories, patches, and original reports. The summary is updated after every finished task. Functional and PoV security scores remain independent and retain the original scoring rules.
+
+Since v0.2.1 the functional-test parser reads parallel `ctest -j` output per test. The Wireshark tasks interleave output from concurrent tests, and the original parser could pair a test with another test's status, misreporting passes and failures. Functional results for those tasks can therefore differ from v0.2.0 and v0.1; other tasks are unaffected. Locally cached baselines are rebuilt automatically.
 
 Downloaded data is cached in `~/.cache/securevibebench/huggingface/`; installed resources are extracted to `~/.cache/securevibebench/resources/`. Both respect `XDG_CACHE_HOME`. The package's `resources.json` records upstream commits and checksums. No `dev/` directory is required.
 

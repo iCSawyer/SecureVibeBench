@@ -17,7 +17,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 HF_REPO = "iCSawyer/SecureVibeBench"
-HF_COMMIT = "982bb91e6521e2e4a6cf8e58de5196ed45743e26"
+HF_COMMIT = "5fa48dd35fe29565adaa020dd2d333b650f3e621"
 HF_TASK_COUNT = 105
 MINI_REPO = "https://github.com/SWE-agent/mini-swe-agent.git"
 MINI_TAG = "v2.4.6"
