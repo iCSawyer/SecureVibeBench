@@ -14,7 +14,7 @@
 
 
 > [!IMPORTANT]
-> **SecureVibeBench is now v0.2!** Just try `pip install securevibebench`!
+> **SecureVibeBench is now v0.2!** Just try `pip install -U securevibebench`!
 >
 > We are updating the evaluation criteria and workflow currently, so **the results obtained may differ from v0.1**.
 > Please report any usage issues you encouter via Issues or my [email](mailto:junkaichen@smu.edu.sg), and we will investigate and fix as soon as possible. 🙏
@@ -23,7 +23,6 @@
     ✨&nbsp;<a href="#nav-news">News</a>
     | 🛠️&nbsp;<a href="#nav-quick-start">Quick Start</a>
     | 🔭&nbsp;<a href="#nav-overview">Overview</a>
-    | 🗺️&nbsp;<a href="#nav-roadmap">Roadmap</a>
     | 📚&nbsp;<a href="#nav-citation">Citation</a>
     | 🙏&nbsp;<a href="#nav-acknowledgments">Acknowledgments</a>
 </p>
@@ -50,11 +49,11 @@ Requirements: Python 3.12+, Linux, and Docker.
 We recommend [uv](https://docs.astral.sh/uv/getting-started/installation/) for managing Python environments.
 
 ```bash
-uv pip install securevibebench
+uv pip install -U securevibebench
 ```
 ```bash
 # Or with pip
-pip install securevibebench
+pip install -U securevibebench
 ```
 
 Task containers will be prepared when the real evaluation starts.
@@ -103,13 +102,6 @@ To comprehensively evaluate the generated code of code agents, we conduct (i) **
 > - First SWE-bench-level, peer-reviewed benchmark for secure vibe coding.
 > - Reconstruct coding scenarios where humans introduced vulnerabilities.
 > - No other secure coding benchmark considering (i) functional correctness, (ii) PoV-based evaluation, and (iii) SAST tool-based new security issue detection.
-
-
-<a id="nav-roadmap"></a>
-
-## 🗺️ Roadmap
-
-- [ ] **Cascaded LLM-as-a-judge.** Add an LLM judge as a final stage after the functional checks. Its verdicts would be reported separately so they don't change the existing scores.
 
 
 <a id="nav-citation"></a>
