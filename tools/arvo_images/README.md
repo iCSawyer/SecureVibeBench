@@ -4,7 +4,7 @@ Evaluation uses immutable prepared images. It does not build environments or dow
 
 ## Produce an image
 
-Use an original source task, with its Dockerfile and preparation scripts. The minimal runtime tasks in `example/` and `evaluation/tasks/` are not build inputs. Install maintainer dependencies with `pip install '.[publish]'`.
+Use an original source task, with its Dockerfile and preparation scripts. The minimal runtime tasks in `example/` and the HF release are not build inputs. Install maintainer dependencies with `pip install .`.
 
 ```bash
 python tools/arvo_images/prepare.py --tasks ORIGINAL_TASKS --task ID \
@@ -28,7 +28,7 @@ securevibebench pull --tasks data --task full
 securevibebench generate --tasks data --task ID --model 'openai/<model>' --local-images --eval
 ```
 
-The exporter records each registry digest, expected image ID, platform, baseline hash, and verified native agent. Add those definitions to `evaluation/tasks/` and `evaluation/image-catalog.json` when preparing a package release. The packaged catalog currently contains 21 images. The wrapper only accepts declared image tasks and never falls back to a Dockerfile.
+The exporter records each registry digest, expected image ID, platform, baseline hash, and verified native agent. Publish those definitions and the image catalog to HF `full-habour`; do not put the complete dataset in GitHub. Update `evaluation/dataset-lock.json` after verifying the HF commit. The current HF release contains 21 image tasks. The wrapper only accepts declared image tasks and never falls back to a Dockerfile.
 
 Published offline bundles from earlier batches retain their own framework wheel and importer. Use those frozen bundles as complete archives. The current evaluator consumes the minimal image task format; export a new task root when using an earlier distribution with the current package.
 
@@ -37,12 +37,14 @@ Published offline bundles from earlier batches retain their own framework wheel 
 `full-habour` contains only tasks with published image digests. `availability.json` lists every benchmark ID and marks tasks without images as unsupported. HF README files are not changed by the publisher.
 
 ```bash
-python tools/publish_dataset.py --all-tasks ORIGINAL_TASKS --output runs/hf-stage
-python tools/publish_dataset.py --all-tasks ORIGINAL_TASKS --output runs/hf-stage \
+python tools/publish_dataset.py --source TASK_FILES --catalog IMAGE_CATALOG_JSON \
+  --framework PREPARED_FRAMEWORK --all-tasks ORIGINAL_TASKS --output runs/hf-stage
+python tools/publish_dataset.py --source TASK_FILES --catalog IMAGE_CATALOG_JSON \
+  --framework PREPARED_FRAMEWORK --all-tasks ORIGINAL_TASKS --output runs/hf-stage \
   --publish --expected-head REVIEWED_FULL_HABOUR_COMMIT
 ```
 
-The first command validates and stages task files, the image catalog, availability, and a deterministic archive. Review those artifacts before publishing. The second command updates exactly the reviewed branch head, removes obsolete task files, and writes `tools/image_build/publication-lock.json`. The immutable source-data lock stays separate so image production can still obtain the original build inputs.
+The first command validates and stages task files, the image catalog, availability, and a deterministic archive. Review those artifacts before publishing. The second command updates exactly the reviewed branch head, removes obsolete task files, and writes `tools/image_build/publication-lock.json` plus the runtime HF release lock. The immutable source-data lock stays separate so image production can still obtain the original build inputs.
 
 ## Downstream use
 

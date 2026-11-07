@@ -1,3 +1,9 @@
+## HF task storage and branch cleanup
+
+- Store full task definitions, availability, provenance, and the shared network image archive on HF full-habour.
+- Pin and verify the HF release; cache it before trials and reuse it with no network under --local-images.
+- Keep one example in GitHub and remove branch workflows.
+
 ## 0.3.0 — Prepared image evaluation (habour branch)
 
 - Use fixed GHCR digests and verify Docker image IDs before trials.

@@ -1,5 +1,6 @@
 include LICENSE README.md uv.lock
-recursive-include evaluation *.py *.json *.toml *.md *.sh *.tar.gz
+recursive-include evaluation *.py
+include evaluation/dataset-lock.json evaluation/framework/lock.json
 recursive-include tools/image_build *.json
 recursive-include tools *.py
 recursive-include docs *.md

@@ -52,3 +52,9 @@ example/**/environment/docker-compose.yaml
 # Native Harbor run records and submitted patches.
 runs/
 submissions/
+
+# Full task releases and generated network images are hosted on HF.
+/evaluation/tasks/
+/evaluation/image-catalog.json
+/evaluation/availability.json
+/evaluation/framework/*.tar.gz

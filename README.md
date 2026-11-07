@@ -52,7 +52,7 @@ securevibebench list
 securevibebench pull --task 992
 ```
 
-The image packages are private. Your GitHub account needs package access and a token with `read:packages`. The installed catalog contains 21 prepared image tasks. `pull --task full` downloads all catalog images. uv is optional: use `uv sync --locked` instead of `pip install .`.
+Task files are hosted on HF `full-habour`. The image packages are private. Your GitHub account needs package access and a token with `read:packages`. The HF release contains 21 prepared image tasks. The package downloads the pinned task release into a local cache before trials. GitHub keeps only one example. `pull --task full` caches the HF task release and downloads all supported images. uv is optional: use `uv sync --locked` instead of `pip install .`.
 
 ### 2. Generate a submission with mini-swe-agent
 

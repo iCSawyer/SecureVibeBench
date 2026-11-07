@@ -2325,13 +2325,10 @@ name = "securevibebench"
 version = "0.3.0"
 source = { editable = "." }
 dependencies = [
+    { name = "filelock" },
     { name = "harbor" },
-    { name = "tomli-w" },
-]
-
-[package.optional-dependencies]
-publish = [
     { name = "huggingface-hub" },
+    { name = "tomli-w" },
 ]
 
 [package.dev-dependencies]
@@ -2343,11 +2340,11 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "filelock", specifier = ">=3.16,<4" },
     { name = "harbor", specifier = "==0.25.0" },
-    { name = "huggingface-hub", marker = "extra == 'publish'", specifier = ">=1.33,<2" },
+    { name = "huggingface-hub", specifier = ">=1.33,<2" },
     { name = "tomli-w", specifier = ">=1.2,<2" },
 ]
-provides-extras = ["publish"]
 
 [package.metadata.requires-dev]
 dev = [

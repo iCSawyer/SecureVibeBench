@@ -7,13 +7,13 @@ import tomllib
 import pytest
 
 from securevibebench_evaluation.harbor_native import write_config
-from securevibebench_evaluation.images import TASKS, acquire, read_task, stage_task
+from securevibebench_evaluation.images import acquire, read_task, stage_task
 from securevibebench_evaluation.submissions import stage_submissions, submission_tasks
 
 
 def prepared(tmp_path):
     task = tmp_path / 'tasks/securevibebench-992'
-    shutil.copytree(TASKS / task.name, task)
+    shutil.copytree(Path(__file__).parents[1] / 'example' / task.name, task)
     return task
 
 
@@ -72,7 +72,7 @@ def test_missing_image_never_triggers_build(tmp_path, monkeypatch, local_only):
     record = read_task(task)['metadata']['image']
     pulled = []
     monkeypatch.setattr(images, 'inspect_image', lambda reference: {'Id': record['id'], 'Os':'linux','Architecture':'amd64'} if pulled else None)
-    monkeypatch.setattr(images, 'ensure_framework', lambda logs: {})
+    monkeypatch.setattr(images, 'ensure_framework', lambda logs, **kwargs: {})
     def run(command, **kwargs):
         assert command[:2] == ['docker','pull']
         assert command[-1] == record['reference']
@@ -284,11 +284,15 @@ def test_offline_scoring_does_not_require_host_dns(tmp_path, monkeypatch):
     assert not (tmp_path / 'offline/environment/resolv.conf').exists()
 
 
-def test_unavailable_task_is_explicit_and_full_stays_runnable():
+def test_unavailable_task_is_explicit_and_full_stays_runnable(tmp_path):
     from securevibebench_evaluation.images import select_tasks, task_statuses
-    rows = task_statuses()
+    task = prepared(tmp_path)
+    records = [{'task': task.name, 'localid': '992', 'status': 'supported'},
+               {'task': 'securevibebench-999', 'localid': '999', 'status': 'unsupported'}]
+    (task.parent / 'availability.json').write_text(json.dumps({'tasks': records}))
+    rows = task_statuses(task.parent)
     unavailable = next(row for row in rows if row['status'] == 'unsupported')
     with pytest.raises(ValueError, match='temporarily unsupported'):
-        select_tasks([unavailable['localid']])
+        select_tasks([unavailable['localid']], task.parent)
     supported = {row['task'] for row in rows if row['status'] == 'supported'}
-    assert {path.name for path in select_tasks(['full'])} == supported
+    assert {path.name for path in select_tasks(['full'], task.parent)} == supported

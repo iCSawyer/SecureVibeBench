@@ -13,7 +13,6 @@ import tomllib
 from .harbor_native import configure_dns, digest, select_cpus, write_config
 
 HERE = Path(__file__).resolve().parent
-TASKS = HERE / "tasks"
 SHA256 = r"sha256:[0-9a-f]{64}"
 REFERENCE = re.compile(r"[^\s@]+@" + SHA256)
 
@@ -56,7 +55,9 @@ def read_task(task: Path):
 
 def task_statuses(root=None):
     """List the full inventory without making unsupported tasks runnable."""
-    root = (root or TASKS).resolve()
+    from .dataset import resolve_tasks
+
+    root = resolve_tasks(root)
     candidates = [root / "availability.json", root.parent / "availability.json"]
     for path in candidates:
         if path.is_file():
@@ -74,7 +75,9 @@ def task_statuses(root=None):
 
 
 def select_tasks(values=None, root=None):
-    root = (root or TASKS).resolve()
+    from .dataset import resolve_tasks
+
+    root = resolve_tasks(root)
     selected = [
         part.strip() for value in (values or ["full"]) for part in value.split(",")
     ]
@@ -157,7 +160,7 @@ def framework_tag():
     )
 
 
-def ensure_framework(logs):
+def ensure_framework(logs, *, local_only=False):
     record = json.loads((HERE / "framework/lock.json").read_text())
     if framework_tag() != record["local_tag"]:
         raise ValueError("Harbor network image does not match the installed package")
@@ -165,7 +168,9 @@ def ensure_framework(logs):
     if info:
         validate_image(info, record["image_id"])
     else:
-        archive = HERE / "framework" / record["archive"]
+        from .dataset import snapshot
+
+        archive = snapshot(local_only=local_only) / "framework" / record["archive"]
         if digest(archive) != record["sha256"]:
             raise ValueError("Harbor network image archive checksum mismatch")
         with (logs / "framework-load.log").open("w") as log:
@@ -230,7 +235,7 @@ def acquire(tasks, logs, *, local_only=False, agent=None):
                     "pulled": pulled,
                 }
             )
-        report["framework"] = ensure_framework(logs)
+        report["framework"] = ensure_framework(logs, local_only=local_only)
         report["state"] = "completed"
     except Exception as exc:
         report.update(state="failed", error=str(exc))

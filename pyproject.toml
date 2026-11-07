@@ -21,10 +21,9 @@ classifiers = [
 dependencies = [
     "harbor==0.25.0",
     "tomli-w>=1.2,<2",
+    "huggingface-hub>=1.33,<2",
+    "filelock>=3.16,<4",
 ]
-
-[project.optional-dependencies]
-publish = ["huggingface-hub>=1.33,<2"]
 
 [dependency-groups]
 dev = ["build>=1.2.2", "twine>=6.0", "pytest>=8,<10"]
@@ -46,7 +45,7 @@ include-package-data = false
 securevibebench_evaluation = "evaluation"
 
 [tool.setuptools.package-data]
-securevibebench_evaluation = ["availability.json", "image-catalog.json", "harbor_assets/*.py", "framework/*.json", "framework/*.tar.gz", "tasks/*/*.toml", "tasks/*/*.md", "tasks/*/tests/*.sh"]
+securevibebench_evaluation = ["dataset-lock.json", "harbor_assets/*.py", "framework/lock.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

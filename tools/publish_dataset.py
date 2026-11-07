@@ -21,7 +21,14 @@ from securevibebench_evaluation.images import read_task
 
 REPO = "iCSawyer/SecureVibeBench"
 BRANCH = "full-habour"
-ARTIFACTS = {"manifest.json", "tasks.tar.gz", "availability.json", "image-catalog.json"}
+ARTIFACTS = {
+    "manifest.json",
+    "tasks.tar.gz",
+    "availability.json",
+    "image-catalog.json",
+    "framework/lock.json",
+    "framework/harbor-egress-control.tar.gz",
+}
 TASK_FILES = ("instruction.md", "task.toml", "tests/test.sh")
 
 
@@ -40,7 +47,7 @@ def task_id(path):
     return match[1]
 
 
-def stage(source, all_tasks, catalog, output):
+def stage(source, all_tasks, catalog, output, framework=None):
     """Export only runnable image tasks; list all other IDs as unsupported."""
     if output.exists():
         raise FileExistsError("Choose a new staging directory")
@@ -105,6 +112,17 @@ def stage(source, all_tasks, catalog, output):
                 message="Temporarily unsupported: no published prepared image digest.",
             )
         availability["tasks"].append(row)
+    if framework is not None:
+        record = json.loads((framework / "lock.json").read_text())
+        archive = framework / record["archive"]
+        if (
+            archive.name != "harbor-egress-control.tar.gz"
+            or checksum(archive) != record["sha256"]
+        ):
+            raise ValueError("Invalid shared framework image archive")
+        (output / "framework").mkdir()
+        shutil.copy2(framework / "lock.json", output / "framework/lock.json")
+        shutil.copy2(archive, output / "framework" / archive.name)
     write_json(output / "availability.json", availability)
     shutil.copy2(catalog, output / "image-catalog.json")
     files = {
@@ -245,24 +263,24 @@ def publish(output, expected_head):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source", type=Path, default=Path("evaluation/tasks"))
+    parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--all-tasks", type=Path, required=True)
-    parser.add_argument(
-        "--catalog", type=Path, default=Path("evaluation/image-catalog.json")
-    )
+    parser.add_argument("--catalog", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--framework", type=Path, required=True)
     parser.add_argument("--publish", action="store_true")
     parser.add_argument(
         "--expected-head", help="Reviewed full-habour commit; required for upload"
     )
     args = parser.parse_args()
     if not args.output.exists():
-        stage(args.source, args.all_tasks, args.catalog, args.output)
+        stage(args.source, args.all_tasks, args.catalog, args.output, args.framework)
     if args.publish:
         if not args.expected_head:
             parser.error("--publish requires --expected-head")
         record = publish(args.output, args.expected_head)
         write_json(Path("tools/image_build/publication-lock.json"), record)
+        write_json(Path("evaluation/dataset-lock.json"), record)
         write_json(args.output.parent / "publication.json", record)
         print(json.dumps(record, indent=2))
     else:

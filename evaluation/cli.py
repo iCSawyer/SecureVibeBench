@@ -10,7 +10,8 @@ import subprocess
 from pathlib import Path
 from uuid import uuid4
 
-from .images import TASKS, acquire, select_tasks, task_statuses
+from .images import acquire, select_tasks, task_statuses
+from .dataset import resolve_tasks
 
 
 def build_parser():
@@ -22,7 +23,10 @@ def build_parser():
     listing = sub.add_parser(
         "list", help="Show supported and temporarily unsupported tasks"
     )
-    listing.add_argument("--tasks", type=Path, default=TASKS)
+    listing.add_argument("--tasks", type=Path)
+    listing.add_argument(
+        "--local-images", action="store_true", help="Use cached HF data without network"
+    )
     listing.add_argument("--json", action="store_true")
     pull = sub.add_parser(
         "pull", help="Download and verify pinned images before evaluation"
@@ -40,8 +44,7 @@ def build_parser():
         command.add_argument(
             "--tasks",
             type=Path,
-            default=TASKS,
-            help="Native image task root; default: packaged catalog",
+            help="Native image task root; default: pinned HF release cache",
         )
         command.add_argument(
             "--output", type=Path, help="New directory for logs and results"
@@ -105,21 +108,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if getattr(args, "jobs", 1) < 1:
         parser.error("--jobs must be positive")
-    if args.action == "list":
-        records = task_statuses(args.tasks)
-        if args.json:
-            print(json.dumps(records, indent=2))
-        else:
-            print("ID\tPROJECT\tSTATUS\tREASON")
-            for item in records:
-                print(
-                    "\t".join(
-                        str(item.get(key, ""))
-                        for key in ("localid", "project", "status", "reason")
-                    )
-                )
-        return 0
-    if args.output is None:
+    if args.action != "list" and args.output is None:
         parent = "submissions" if args.action == "generate" else "runs"
         args.output = Path(parent) / (
             args.action
@@ -128,9 +117,26 @@ def main(argv=None):
             + "-"
             + uuid4().hex[:8]
         )
-    args.output = args.output.resolve()
-    print("Output:", args.output, flush=True)
+    if args.action != "list":
+        args.output = args.output.resolve()
+        print("Output:", args.output, flush=True)
     try:
+        if args.action != "package":
+            args.tasks = resolve_tasks(args.tasks, local_only=args.local_images)
+        if args.action == "list":
+            records = task_statuses(args.tasks)
+            if args.json:
+                print(json.dumps(records, indent=2))
+            else:
+                print("ID\tPROJECT\tSTATUS\tREASON")
+                for item in records:
+                    print(
+                        "\t".join(
+                            str(item.get(key, ""))
+                            for key in ("localid", "project", "status", "reason")
+                        )
+                    )
+            return 0
         if args.action == "pull":
             tasks = select_tasks(args.task, args.tasks)
             acquire(tasks, args.output, local_only=args.local_images)

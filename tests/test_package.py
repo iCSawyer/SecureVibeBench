@@ -21,6 +21,7 @@ def test_eval_accepts_default_or_explicit_input(tmp_path,monkeypatch,arguments):
     seen={}
     def fake(source,tasks,output,jobs,**kwargs):seen.update(source=source,output=output);return 0
     monkeypatch.setattr(submissions,'score',fake);monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(cli, 'resolve_tasks', lambda path, **kwargs: path or tmp_path/'tasks')
     assert cli.main(['eval',*arguments])==0
     assert seen['source']==(tmp_path/'my-submission' if arguments else tmp_path/'submissions')
     assert seen['output'].name.startswith('eval-')
@@ -79,7 +80,7 @@ def test_eval_does_not_accept_model_arguments():
 def test_generate_supports_multiple_task_forms(tmp_path,selection):
     for task in ['992','10172']:
         import shutil
-        shutil.copytree(images.TASKS/'securevibebench-992',tmp_path/('securevibebench-'+task))
+        shutil.copytree(Path(__file__).parents[1]/'example/securevibebench-992',tmp_path/('securevibebench-'+task))
     args=cli.build_parser().parse_args(['generate','--model','openai/test','--task',*selection])
     assert len(images.select_tasks(args.task,tmp_path))==2
     assert len(images.select_tasks(['full'],tmp_path))==2
@@ -106,7 +107,8 @@ def test_external_patch_input_is_accepted(tmp_path):
     assert submissions.resolve_submission(tmp_path)==(tmp_path,'patches')
 
 
-def test_list_exposes_support_status_without_docker(capsys):
-    assert cli.main(['list', '--json']) == 0
+def test_list_exposes_support_status_without_docker(capsys, tmp_path):
+    (tmp_path/'availability.json').write_text(json.dumps({'tasks': [{'status':'supported'},{'status':'unsupported'}]}))
+    assert cli.main(['list', '--tasks', str(tmp_path), '--json']) == 0
     records = json.loads(capsys.readouterr().out)
     assert {row['status'] for row in records} == {'supported', 'unsupported'}

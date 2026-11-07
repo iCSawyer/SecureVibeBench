@@ -7,7 +7,8 @@ import tarfile
 from types import SimpleNamespace
 
 import pytest
-from securevibebench_evaluation.images import HERE, TASKS
+from securevibebench_evaluation.harbor_native import write_config
+from securevibebench_evaluation.images import read_task
 
 
 def publisher():
@@ -26,14 +27,17 @@ def staged(tmp_path):
     ids = {'992', '32345'}
     for identifier in ids:
         name = 'securevibebench-' + identifier
-        shutil.copytree(TASKS / name, source / name)
-        shutil.copytree(TASKS / name, all_tasks / name)
+        example = Path(__file__).parents[1]/'example/securevibebench-992'
+        shutil.copytree(example, source / name)
+        config = read_task(source / name)
+        config['task']['name'] = 'securevibebench/' + name
+        config['metadata']['localid'] = identifier
+        write_config(source / name / 'task.toml', config)
+        shutil.copytree(source / name, all_tasks / name)
     unavailable = all_tasks / 'securevibebench-999'
     unavailable.mkdir()
     (unavailable / 'task.toml').write_text('[metadata]\nrepo_cwd="/src/unavailable"\n')
-    catalog = json.loads((HERE / 'image-catalog.json').read_text())
-    catalog['images'] = [item for item in catalog['images'] if item['task'] in ids]
-    catalog['task_count'] = len(ids)
+    catalog = {'task_count': len(ids), 'images': [dict(read_task(source / ('securevibebench-'+identifier))['metadata']['image'], task=identifier) for identifier in ids]}
     path = tmp_path / 'catalog.json'
     path.write_text(json.dumps(catalog))
     output = tmp_path / 'stage'

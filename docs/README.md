@@ -1,6 +1,6 @@
 # Image-based native Harbor evaluation
 
-This workflow is experimental on the `habour` branch. It uses prepared images for every trial. The installed catalog currently covers 21 tasks; this is a subset of the 105-task benchmark. `full` means all tasks in the selected image catalog. No HF or GitHub publication is performed by these commands.
+This workflow is experimental on the `habour` branch. It uses prepared images for every trial. The pinned HF task release currently covers 21 tasks; this is a subset of the 105-task benchmark. `full` means all tasks in the selected image catalog. No HF or GitHub publication is performed by these commands.
 
 ## 1. Environment installation
 
@@ -32,7 +32,7 @@ securevibebench pull --task 992 32345
 securevibebench pull --task full
 ```
 
-`pull` retrieves immutable registry digests and verifies each Docker image ID and platform. Its output directory contains pull logs and `images.json`. The package also includes a checksum-verified archive of Harbor's network policy image. It loads that image locally. This prevents Harbor from building its firewall image during a trial.
+`pull` retrieves immutable registry digests and verifies each Docker image ID and platform. Its output directory contains pull logs and `images.json`. The HF release also includes a checksum-verified archive of Harbor's network policy image. Preparation caches the release and loads that image locally. This prevents Harbor from building its firewall image during a trial.
 
 `generate` and `eval` perform the same image check before starting any trial. They pull missing images by default. Add `--local-images` to prohibit registry access and fail early if an image is missing. Images imported with `docker load` are accepted when their exact image IDs match the task contract.
 
@@ -40,7 +40,7 @@ No evaluation command installs OS packages, clones task repositories, or builds 
 
 ### Task and image contract
 
-The package contains task definitions under `evaluation/tasks/` and provenance in `evaluation/image-catalog.json`. `example/` contains one task. Use `--tasks PATH` for another native image task root. A task contains:
+Full task definitions, availability, image provenance, and the shared network image archive are hosted on HF `full-habour`. `evaluation/dataset-lock.json` pins the exact HF commit, archive checksum, and manifest checksum. GitHub and the Python package contain no full task dataset. `example/` contains one task. Use `--tasks PATH` for another native image task root. A task contains:
 
 ```text
 securevibebench-ID/
@@ -51,7 +51,9 @@ securevibebench-ID/
 
 `task.toml` declares an immutable registry digest, its expected Docker config ID, platform, and agents whose offline setup was verified. The image contains the starting source snapshot, compiler dependencies, test runtime, and reference baseline. Original repository history is removed during image production. A new one-commit repository supplies `svb-start` for patch collection and replay.
 
-A task cannot provide a Dockerfile as a fallback. Trial definitions are copied to the run directory, where the registry reference is replaced with the verified local image ID. Host DNS and CPU placement are configured in this copy. The packaged task definitions remain unchanged. All tasks are checked before a generation job starts.
+A task cannot provide a Dockerfile as a fallback. Trial definitions are copied to the run directory, where the registry reference is replaced with the verified local image ID. Host DNS and CPU placement are configured in this copy. Cached task definitions remain unchanged. All selected tasks are checked before a generation job starts.
+
+The default task cache is `$XDG_CACHE_HOME/securevibebench/datasets/<revision>/data`, or `~/.cache/securevibebench/datasets/<revision>/data` when XDG_CACHE_HOME is unset. `list`, `pull`, `generate`, and `eval` obtain the pinned release when the cache is missing. `--local-images` prohibits HF and registry access and requires a cached release. Use `pull` while online before running evaluation offline. Help and package installation do not download task data.
 
 ### Network phases
 
@@ -91,7 +93,7 @@ securevibebench generate --model 'openai/<model>' --task 992,32345 --jobs 2 --lo
 securevibebench generate --model 'openai/<model>' --task full --jobs 2 --local-images --eval
 ```
 
-`--task full`, or omission of `--task`, selects all tasks under `--tasks`. The default root is the installed 21-task catalog. `--tasks example --task full` selects the single example. Unknown IDs fail before any trial. `--jobs` controls native Harbor concurrency. CPU and memory budgets remain in each task definition.
+`--task full`, or omission of `--task`, selects all tasks under `--tasks`. The default root is the verified HF cache containing 21 runnable tasks. `--tasks example --task full` selects the single example. Unknown IDs fail before any trial. `--jobs` controls native Harbor concurrency. CPU and memory budgets remain in each task definition.
 
 ### Agent and model configuration
 
