@@ -9,27 +9,31 @@ Requirements: Linux x86-64, Python 3.12+, Docker Engine with Compose, and permis
 ```bash
 python3.12 -m venv .venv
 source .venv/bin/activate
-pip install .
-docker info
-docker compose version
-securevibebench --help
+pip install -e .
 ```
 
-uv is optional. Use `uv sync --locked` and `source .venv/bin/activate` instead of the venv and pip commands.
+Use `pip install -e .` when working from the checkout: edits to Python source take effect without reinstalling. Reinstall after changing package metadata, dependencies, or command entry points. Use `pip install .` for a regular installation. uv is optional: `uv sync --locked` and `source .venv/bin/activate` can replace the venv and pip commands.
 
 ### Task availability
 
 `securevibebench list` shows the complete 105-task inventory: 21 tasks have prepared image digests and 84 are temporarily unsupported. Use `--json` for structured status. `--task full` selects only supported tasks. Selecting an unsupported task fails before any pull or trial. HF `full-habour` contains only runnable tasks under `data/`; `availability.json` records all task statuses.
 
-### Download images before a run
+### Image access and offline runs
 
 The GHCR packages are private. Your GitHub account needs package access. Use a personal access token with `read:packages` when Docker asks for a password. Do not put the token in task files or command arguments.
 
 ```bash
 docker login ghcr.io
-securevibebench pull --task 992
+```
+
+For a normal run, `generate` and `eval` download missing task files and images automatically. No separate preparation command is required.
+
+For an offline run, download the selected images first:
+
+```bash
 securevibebench pull --task 992 32345
-securevibebench pull --task full
+# Use --task full instead to prepare every supported task.
+securevibebench eval my-submission --local-images
 ```
 
 `pull` retrieves immutable registry digests and verifies each Docker image ID and platform. Its output directory contains pull logs and `images.json`. The HF release also includes a checksum-verified archive of Harbor's network policy image. Preparation caches the release and loads that image locally. This prevents Harbor from building its firewall image during a trial.
@@ -147,7 +151,7 @@ securevibebench eval --local-images
 
 With no path, `eval` checks `submissions/`. It accepts a patch submission there, or one unambiguous child. If there are multiple candidates, specify one. It does not choose the newest run.
 
-A native job needs one completed trial per task and `artifacts/logs/artifacts/agent.patch` from the collection hook. Infrastructure errors and detected Codex tool startup errors prevent packaging. Duplicate attempts are rejected. Generation rewards are not required. The original job remains unchanged.
+A native job needs one completed trial per task and `artifacts/logs/artifacts/agent.patch` from the collection hook. Infrastructure errors and detected Codex tool startup errors prevent packaging. Duplicate attempts are rejected. Generation rewards are not required. The original job remains unchanged. Keep one completed attempt per task; collect multiple attempts into separate submissions.
 
 An optional explicit export is available:
 
@@ -166,13 +170,18 @@ my-submission/
   securevibebench-32345/submission.patch
 ```
 
-Each patch is a regular file, at most 32 MiB. Paths in the patch are relative to the task repository. Make the patch against the image's `svb-start` source snapshot:
+Each patch must be a regular file, not a symbolic link, named exactly `submission.patch`, at most 32 MiB per task. A subset of supported tasks is accepted. Empty patches are valid. No manifest or `submission.json` is required for external patches. Paths in the patch are relative to the task repository. Make the patch against the image's `svb-start` source snapshot:
+
+Run inside the task repository in the prepared task container:
 
 ```bash
-git diff --binary svb-start -- . > submission.patch
+git add -N .
+git diff --binary svb-start -- . > /tmp/submission.patch
 ```
 
-Include new source files with `git add -N` before creating the diff. Do not include task configuration, build dependencies, tests, credentials, or model output outside the source patch. Empty patches are allowed. Submit only the tasks you want to score; each must have a prepared image definition in the selected task root.
+Copy `/tmp/submission.patch` from the container into the matching task directory on the host before running `eval`. Keep this output outside the repository so it is not included in the patch.
+
+Use the image snapshot as the base; a patch against the upstream project HEAD or the vulnerability fix commit can fail to apply. The evaluator runs `git apply --check` before applying a nonempty patch. Include added, modified, and deleted source files. Keep test cases, PoCs, reference data, build dependencies, and evaluation configuration unchanged. Do not include credentials, build output, or the patch file itself. Submit only supported tasks from the same pinned task release. Direct child directories under the submission root must follow the `securevibebench-ID` naming rule.
 
 ```bash
 securevibebench eval my-submission --jobs 2 --local-images --output runs/my-score

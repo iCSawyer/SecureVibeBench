@@ -41,37 +41,52 @@
 
 ## 🛠️ Quick Start
 
-Requirements: Linux x86-64, Python 3.12+, and Docker with Compose. Use this experimental `habour` checkout.
+Requirements: Linux x86-64, Python 3.12+, and Docker with Compose.
 
 ### 1. Environment installation
 
+From this checkout:
+
 ```bash
-pip install .
-docker login ghcr.io
-securevibebench list
-securevibebench pull --task 992
+pip install -e .
 ```
 
-Task files are hosted on HF `full-habour`. The image packages are private. Your GitHub account needs package access and a token with `read:packages`. The HF release contains 21 prepared image tasks. The package downloads the pinned task release into a local cache before trials. GitHub keeps only one example. `pull --task full` caches the HF task release and downloads all supported images. uv is optional: use `uv sync --locked` instead of `pip install .`.
+This editable install uses the local source code. Use `pip install .` for a regular install. uv is optional: `uv sync --locked`.
+
+Task files are downloaded from the pinned HF `full-habour` release when needed. It currently supports 21 tasks; 84 are temporarily unsupported. The current GHCR images require package read access; see [image access](docs/README.md#image-access-and-offline-runs).
 
 ### 2. Generate a submission with mini-swe-agent
 
 ```bash
 export OPENAI_API_KEY='<your-api-key>'
 securevibebench generate --agent mini-swe-agent --model 'openai/<model>' \
-  --task 992 --local-images --output submissions/mini-992 --eval
+  --task 992 --output submissions/mini-992
 ```
 
-Harbor runs its native mini-swe-agent adapter. The fixed image supplies the source, build dependencies, verifier, and cached native agent installation. Setup and compilation have no network; only agent execution can reach the model API allowlist. `--eval` scores the resulting submission in fresh offline containers. Patches, Harbor trajectories, and scores remain in the output directory.
+Harbor runs mini-swe-agent in the prepared task image. The command downloads missing task files and images before trials. Setup and tests run without network; the agent can access only allowed model API hosts. Add `--eval` to score this submission after generation. Patches and Harbor trajectories remain in the output directory.
 
 ### 3. Evaluate a submission
 
 ```bash
-securevibebench eval submissions/mini-992 --local-images
-securevibebench eval /path/to/external-submission --local-images
+securevibebench eval submissions/mini-992
+securevibebench eval /path/to/my-submission
 ```
 
-Scoring needs no model API key. Without `--local-images`, missing fixed images are pulled before trials start. No evaluation command builds an image or downloads task dependencies. See [the usage guide](docs/README.md) for task selection, other agents, and submission requirements.
+An external submission must use this layout:
+
+```text
+my-submission/
+  securevibebench-992/submission.patch
+  securevibebench-32345/submission.patch
+```
+
+- Use one directory per task, named exactly `securevibebench-ID`.
+- `submission.patch` must be a regular file, not a symbolic link, at most 32 MiB per task. Empty patches are allowed.
+- Create the patch against the image's `svb-start` snapshot, with paths relative to the task repository. Include new files with `git add -N` before `git diff --binary svb-start -- .`.
+- Include source changes only. Keep test cases, PoCs, reference data, and evaluation configuration unchanged. Write the patch outside the source repository.
+- Submit any supported subset. Each task has one patch; externally generated submissions do not need `submission.json` or Harbor logs.
+
+Scoring uses fresh offline containers and needs no model API key. Results and logs are saved under `runs/`. For a run with no HF or registry access, download data and images first, then add `--local-images`. See [the usage guide](docs/README.md) for agent options, offline preparation, and submission packaging.
 
 
 <a id="nav-overview"></a>
