@@ -46,6 +46,14 @@ python tools/publish_dataset.py --source TASK_FILES --catalog IMAGE_CATALOG_JSON
 
 The first command validates and stages task files, the image catalog, availability, and a deterministic archive. Review those artifacts before publishing. The second command updates exactly the reviewed branch head, removes obsolete task files, and writes `tools/image_build/publication-lock.json` plus the runtime HF release lock. The immutable source-data lock stays separate so image production can still obtain the original build inputs.
 
+## Repository association
+
+New prepared images carry `org.opencontainers.image.source=https://github.com/iCSawyer/SecureVibeBench`. GHCR uses this source label to associate the image package with the repository.
+
+For an existing package, a label-only auxiliary version can establish the association without replacing the task's evaluation tag or digest. `link_repository.py` accepts an audited image inventory, uses `GITHUB_DOCKER` from the project `.env`, and verifies the package repository, original evaluation digest, and original tag after publication. The temporary Docker authentication file is removed when the command finishes.
+
+The auxiliary tag is `repository-link-20261107`. Its filesystem layers and runtime configuration must match the evaluation image. Package visibility remains a separate setting; repository association does not imply anonymous pull access.
+
 ## Downstream use
 
 ```bash

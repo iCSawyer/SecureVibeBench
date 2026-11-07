@@ -16,6 +16,7 @@ for parent in Path(__file__).resolve().parents:
         sys.path.insert(0, str(parent))
         break
 from tools.image_build.task_assets import shared_hashes
+from tools.image_build.metadata import REPOSITORY_URL, SOURCE_LABEL
 
 TAG = 'securevibebench/cpython-61721:offline-20261107'
 
@@ -155,7 +156,7 @@ def host_wheels(builder, wheels):
 def frozen_agent_image(builder):
     native=native_install(builder,'native-install',builder.candidate,public=True)
     info=json.loads(builder.run('inspect-native',['docker','inspect',native],capture=True).stdout)[0]
-    changes=['ENV UV_OFFLINE=1','WORKDIR /src/cpython3','ENTRYPOINT ["/usr/bin/env"]','CMD ["bash","-c","sleep infinity"]',
+    changes=[f'LABEL {SOURCE_LABEL}={REPOSITORY_URL}','ENV UV_OFFLINE=1','WORKDIR /src/cpython3','ENTRYPOINT ["/usr/bin/env"]','CMD ["bash","-c","sleep infinity"]',
              'LABEL org.opencontainers.image.title="SecureVibeBench CPython 61721 offline environment"']
     for item in info['Config'].get('Env',[]):
         key,value=item.split('=',1)

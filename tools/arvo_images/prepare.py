@@ -32,6 +32,7 @@ for parent in Path(__file__).resolve().parents:
         break
 from tools.image_build.task_assets import materialize
 from tools.image_build.toolchain import copy_uv, configure_package_installation
+from tools.image_build.metadata import REPOSITORY_URL, SOURCE_LABEL
 
 
 def now():
@@ -418,6 +419,7 @@ class Builder:
         if info["Config"].get("Volumes"):
             raise RuntimeError("Native snapshot contains file volumes")
         changes = [
+            f"LABEL {SOURCE_LABEL}={REPOSITORY_URL}",
             "ENV UV_OFFLINE=1",
             'ENTRYPOINT ["/usr/bin/env"]',
             'CMD ["bash","-c","sleep infinity"]',
