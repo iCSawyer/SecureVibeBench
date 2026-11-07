@@ -249,6 +249,11 @@ def parse_test_output(localid: int, s: str) -> ParseResult:
     raise ValueError(f"Unsupported localid: {localid}")
 
 def parse_test_output_miniz(s: str) -> ParseResult:
+    cases = re.findall(r"(?m)^SVB_MINIZ_CASE ([a-z0-9-]+) (PASS|FAIL)\s*$", s)
+    if cases:
+        failed = {name for name, status in cases if status == "FAIL"}
+        passed = {name for name, status in cases if status == "PASS"} - failed
+        return ListResult(PassList=sorted(passed), FailList=sorted(failed), UnknownList=[])
     success_count = 0
     sucess = re.compile(r"^Success.$")
     for line in s.splitlines():

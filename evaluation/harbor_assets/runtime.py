@@ -122,11 +122,17 @@ def reset_repository_history(repo, logs):
     (logs / 'history-reset.json').write_text(json.dumps({'original_git_deleted': True, 'commit_count': int(count), 'original_commit_available': False, 'submission_base': 'svb-start', 'flattened_submodules': [str(child.relative_to(repo)) for child in submodules], 'uninitialized_submodules': uninitialized}, indent=2) + '\n')
 
 
+def has_positive_evidence(result):
+    return bool(result.get('PassList')) or result.get('Status') is True or (
+        result.get('type') == 'NumberResult' and result.get('PassNumber', 0) > 0
+    )
+
+
 def reference_baseline(logs):
     """Keep the reference pass set even when other reference tests fail."""
     command(['bash', str(ROOT / 'reference.sh')], logs / 'reference.log', check=False)
     baseline = parse(logs / 'reference.log', ROOT / 'baseline.json')
-    if not (baseline.get('PassList') or baseline.get('Status') is True):
+    if not has_positive_evidence(baseline):
         with (logs / 'reference.log').open(errors='replace') as stream:
             shutil.copyfileobj(stream, sys.stderr)
         raise RuntimeError('Gold baseline has no positive evidence; do not score this task')
@@ -182,7 +188,7 @@ def probe():
     command(['arvo', 'compile'], logs / 'offline-compile.log')
     functional(logs, 'offline-functional', check=False)
     parsed = parse(logs / 'offline-functional.log', logs / 'offline-functional.json')
-    if not any(parsed.get(name) for name in ('PassList', 'FailList', 'UnknownList')) and parsed.get('Status') not in (True, False):
+    if not any(parsed.get(name) for name in ('PassList', 'FailList', 'UnknownList', 'PassNumber', 'FailNumber', 'UnknownNumber')) and parsed.get('Status') not in (True, False):
         raise RuntimeError('Offline functional command produced no parsed test results')
 
 

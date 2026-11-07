@@ -16,6 +16,11 @@
 
 ## Unreleased (`habour` branch)
 
+- Record shared runtime hashes from each image build context so later source edits do not change its provenance.
+
+- Support explicit count-based functional results for newly prepared images, with non-regressing pass/total counts and no increase in failures or unknowns. Keep existing list and Boolean rules.
+- Make task build directories repeatable and resolve repository-relative entries before offline reference tests.
+
 - Download and verify the pinned HF task data during regular and editable installation; bundle the snapshot for offline cache recovery. Docker images remain acquired before trials.
 
 - Consolidate accepted task images under `ghcr.io/icsawyer/securevibebench`, preserve manifest digests, and verify anonymous Docker pulls.

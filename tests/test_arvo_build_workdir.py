@@ -57,3 +57,41 @@ def test_ndpi_fuzz_build_keeps_library_and_all_fuzz_targets():
     assert "if [ -f Makefile ]; then make distclean; fi" in result
     assert "ls fuzz/fuzz* | while read i; do cp $i $OUT/; done" in result
     assert module.stable_arvo_build(result, "/src", "/src/ndpi") == result
+
+
+@pytest.mark.parametrize(
+    "flags,isolated", [("-m32 -fsanitize=address", True), ("-m64", False)]
+)
+def test_harfbuzz_fuzz_keeps_architecture_and_isolates_32_bit_pkg_config(
+    tmp_path, flags, isolated
+):
+    import os
+    import subprocess
+
+    project = tmp_path / "harfbuzz"
+    project.mkdir()
+    source = 'printf "%s|%s" "$CXXFLAGS" "${PKG_CONFIG_LIBDIR:-}"\n'
+    prepared = module.stable_arvo_build(source, str(project), str(project))
+    assert module.stable_arvo_build(prepared, str(project), str(project)) == prepared
+    environment = {
+        **os.environ,
+        "CFLAGS": "",
+        "CXXFLAGS": flags,
+        "PKG_CONFIG_LIBDIR": "/original",
+    }
+    result = subprocess.check_output(
+        ["bash", "-c", prepared], env=environment, text=True
+    )
+    actual_flags, actual_directory = result.split("|")
+    assert actual_flags == flags
+    assert actual_directory == (
+        "/opt/svb/fuzz-pkgconfig-empty" if isolated else "/original"
+    )
+
+
+def test_libsrtp_fuzz_removes_stale_openssl_archive_members():
+    source = "cd $SRC/libsrtp\nautoreconf -ivf\n./configure\nLIBFUZZER=engine make srtp-fuzzer\n"
+    prepared = module.stable_arvo_build(source, "/src", "/src/libsrtp")
+    assert "make -C /src/libsrtp distclean" in prepared
+    assert prepared.endswith(source)
+    assert module.stable_arvo_build(prepared, "/src", "/src/libsrtp") == prepared

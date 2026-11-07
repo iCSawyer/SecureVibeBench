@@ -165,7 +165,7 @@ class Builder:
         for key in list(metadata):
             if key.startswith('preparation_') or key=='prepared_agents': metadata.pop(key)
         metadata.update(offline_preparation_probe_passed=prepared,preparation_image=image,
-                        preparation_agent_installation='harbor-native',preparation_shared_assets=shared_hashes(),
+                        preparation_agent_installation='harbor-native',preparation_shared_assets=self.state.get('shared_assets_sha256', shared_hashes()),
                         preparation_toolchain_sha256=digest(Path(__import__('tools.image_build.toolchain',fromlist=['x']).__file__)),
                         preparation_source_config={key:metadata[key] for key in ('localid','repo_cwd','base_commit','functional_script_id')},
                         dependency_lock_status='frozen_image',prepared_agents=['mini-swe-agent'] if prepared else [])

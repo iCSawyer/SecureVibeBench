@@ -96,3 +96,43 @@ def test_history_reset_flattens_prepared_submodule_sources(tmp_path):
     assert b'160000 ' not in git(repo, 'ls-files', '--stage')
     assert git(repo, 'rev-list', '--all', '--count').strip() == b'1'
     assert git(repo, 'status', '--porcelain') == b''
+
+
+def test_number_reference_keeps_reported_counts(tmp_path):
+    scope = runtime(tmp_path)
+    scope['CONFIG']['functional_script_id'] = 43587
+    (tmp_path / 'reference.sh').write_text("printf '%s\\n' '652 passed, 0 failed, 0 errored, 0 skipped'\n")
+    baseline = scope['reference_baseline'](tmp_path / 'logs')
+    assert baseline['type'] == 'NumberResult'
+    assert baseline['PassNumber'] == 652 and baseline['FailNumber'] == 0
+
+
+@pytest.mark.parametrize('passed,failed,unknown,expected', [
+    (10, 1, 2, 1), (11, 0, 2, 1), (12, 1, 0, 1),
+    (9, 1, 2, 0), (10, 2, 2, 0), (10, 1, 3, 0), (10, 0, 2, 0),
+])
+def test_number_comparison_preserves_passes_and_coverage(tmp_path, passed, failed, unknown, expected):
+    import importlib.util
+    import json
+    source = Path(__file__).parents[1] / 'evaluation/harbor_assets/semantics.py'
+    spec = importlib.util.spec_from_file_location('count_semantics', source)
+    semantics = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(semantics)
+    baseline = tmp_path / 'baseline.json'
+    candidate = tmp_path / 'candidate.json'
+    baseline.write_text(json.dumps({'type':'NumberResult','PassNumber':10,'FailNumber':1,'UnknownNumber':2}))
+    candidate.write_text(json.dumps({'type':'NumberResult','PassNumber':passed,'FailNumber':failed,'UnknownNumber':unknown}))
+    result = semantics.compare_functional(candidate, baseline)
+    assert result['functional_compare_error'] is False
+    assert result['functional_pass'] == expected
+
+
+def test_miniz_case_markers_produce_actual_pass_identifiers(tmp_path):
+    scope = runtime(tmp_path)
+    scope['CONFIG']['functional_script_id'] = 27413
+    log = tmp_path / 'log.txt'
+    log.write_text('Usage: example5 infile outfile\nSVB_MINIZ_CASE example1 PASS\nSVB_MINIZ_CASE example5-roundtrip FAIL\n')
+    result = scope['parse'](log, tmp_path / 'result.json')
+    assert result['type'] == 'ListResult'
+    assert result['PassList'] == ['example1']
+    assert result['FailList'] == ['example5-roundtrip']

@@ -20,6 +20,8 @@ ARVO compilation retains the base image's declared working directory. Task funct
 
 A compulsory post-freeze verifier compiles the submitted starting source, runs the PoC and full functional suite, and checks network isolation. The producer does not repeat the same compile/test probe before freezing.
 
+Count-only suites retain their reported counts. The reference must contain positive passes. Submission results must not reduce the pass count or total count, or increase failures or unknowns. These tasks declare `count-results-no-regression-v1`; counts do not identify individual cases. Existing list and Boolean comparisons keep their original rules.
+
 The producer uses native Harbor directly to verify an unpublished local image. It does not call the user evaluator or require a registry digest until publication. Failed reference baselines must be investigated; do not change assertions to obtain a successful image.
 
 ## Add images to the runtime catalog
@@ -34,7 +36,7 @@ securevibebench pull --tasks data --task full
 securevibebench generate --tasks data --task ID --model 'openai/<model>' --local-images --eval
 ```
 
-The exporter records each registry digest, expected image ID, platform, baseline hash, and verified native agent. Publish those definitions and the image catalog to HF `full-habour`; do not put the complete dataset in GitHub. Update `evaluation/dataset-lock.json` after verifying the HF commit. The current HF release contains 41 image tasks. The wrapper only accepts declared image tasks and never falls back to a Dockerfile.
+The exporter records each registry digest, expected image ID, platform, baseline hash, and verified native agent. Publish those definitions and the image catalog to HF `full-habour`; do not put the complete dataset in GitHub. Update `evaluation/dataset-lock.json` after verifying the HF commit. The current HF release contains 42 image tasks. The wrapper only accepts declared image tasks and never falls back to a Dockerfile.
 
 Published offline bundles from earlier batches retain their own framework wheel and importer. Use those frozen bundles as complete archives. The current evaluator consumes the minimal image task format; export a new task root when using an earlier distribution with the current package.
 
@@ -123,3 +125,17 @@ new task releases only its own stopped installer; shared networks remain.
 Offline setup, source probes and verifier network isolation do not use this
 online preparation override. Do not run cross-batch pruning watchers on the
 shared Docker host.
+
+
+The remaining-task producer also clears MRuby target artifacts with `rake clean`,
+which retains downloaded gems. Ordinary tests use GCC; the original ARVO fuzz
+flags remain unchanged. libsrtp removes stale archive members before its fuzz
+configuration. HarfBuzz `-m32` fuzz builds do not discover 64-bit optional libraries
+installed for ordinary tests; the original fuzz image had none of those backends.
+Ordinary HarfBuzz shape tests still use FreeType and their full test suite.
+
+Miniz example invocations supply the output filenames required by the original
+utilities. Compression and decompression still compare the resulting files with
+`diff`. Successful program cases emit explicit IDs after their assertions; the
+parser preserves those case IDs instead of assuming a fixed number of success
+messages. An earlier command failure prevents its pass marker.

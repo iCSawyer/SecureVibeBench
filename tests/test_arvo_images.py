@@ -113,3 +113,66 @@ def test_opensc_ordinary_tests_remove_fuzzer_tool_objects():
     assert "make -C src/tools clean" in updated and "make distclean" in updated
     assert updated.endswith(original)
     assert module.stable_functional(updated, "64898") == updated
+
+
+def test_build_directories_and_relative_repository_entry_are_repeatable():
+    source = "cd curl\nmkdir build-autotools && cd build-autotools\n../configure\nmake test\n"
+    expected = "cd /src/curl\nmkdir -p build-autotools && cd build-autotools\n../configure\nmake test\n"
+    assert module.stable_functional(source, "8000", "/src/curl") == expected
+    assert module.stable_reference(source, "8000", "/src/curl") == expected
+    assert module.stable_functional(expected, "8000", "/src/curl") == expected
+    assert module.stable_functional("mkdir builder\n") == "mkdir builder\n"
+
+
+def test_mruby_clean_keeps_downloaded_gems_and_rebuilds_ordinary_objects():
+    source = 'cd /src/mruby\nrake -j"$(nproc)"\nrake test --verbose\n'
+    result = module.stable_functional(source, "15603", "/src/mruby")
+    assert "rake clean\n" in result and "deep_clean" not in result
+    assert "export CC=gcc CXX=g++" in result
+    assert result.endswith('rake -j"$(nproc)"\nrake test --verbose\n')
+    assert module.stable_functional(result, "15603", "/src/mruby") == result
+
+
+def test_miniz_invocations_keep_roundtrip_assertions_and_log_real_cases():
+    source = "../bin/example4 compressed_file.zlib\ndiff my_original_file.txt another_decompressed_file.txt\n../bin/example5 c my_original_file.txt\n../bin/example5 d compressed_by_example5.zlib\ndiff my_original_file.txt decompressed_by_example5.txt\n"
+    result = module.stable_functional(source, "27413", "/src/miniz")
+    assert result.startswith("set -e\n")
+    assert (
+        "../bin/example4 compressed_file.zlib another_decompressed_file.txt" in result
+    )
+    assert (
+        "../bin/example5 c my_original_file.txt compressed_by_example5.zlib" in result
+    )
+    assert (
+        "../bin/example5 d compressed_by_example5.zlib decompressed_by_example5.txt"
+        in result
+    )
+    assert (
+        "diff my_original_file.txt decompressed_by_example5.txt\necho SVB_MINIZ_CASE example5-roundtrip PASS"
+        in result
+    )
+    assert module.stable_functional(result, "27413", "/src/miniz") == result
+
+
+def test_provenance_uses_the_context_hashes_after_shared_sources_change(tmp_path):
+    import tomllib
+    from types import SimpleNamespace
+
+    builder = object.__new__(module.Builder)
+    builder.config = tomllib.loads(
+        (
+            Path(__file__).parents[1] / "example/securevibebench-992/task.toml"
+        ).read_text()
+    )
+    frozen = {
+        "runtime.py": "a" * 64,
+        "parse_test_report.py": "b" * 64,
+        "semantics.py": "c" * 64,
+    }
+    builder.state = {"shared_assets_sha256": frozen}
+    builder.args = SimpleNamespace(cpus=4, memory_mb=8192)
+    environment = tmp_path / "environment"
+    environment.mkdir()
+    (environment / "Dockerfile").write_text("FROM scratch\n")
+    result = builder.task_config("sha256:" + "1" * 64, tmp_path, prepared=True)
+    assert result["metadata"]["preparation_shared_assets"] == frozen

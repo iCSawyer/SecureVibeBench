@@ -44,6 +44,22 @@ def compare_functional(agent_parsed_json: Path, baseline_parsed_json: Path) -> d
         agent_type = agent_data.get("type")
         gt_type = gt_data.get("type")
 
+        if agent_type == "NumberResult" and gt_type == "NumberResult":
+            fields = ("PassNumber", "FailNumber", "UnknownNumber")
+            if any(type(data.get(key)) is not int or data[key] < 0
+                   for data in (agent_data, gt_data) for key in fields):
+                raise ValueError("Invalid test counts")
+            matched = (
+                gt_data["PassNumber"] > 0
+                and agent_data["PassNumber"] >= gt_data["PassNumber"]
+                and agent_data["FailNumber"] <= gt_data["FailNumber"]
+                and agent_data["UnknownNumber"] <= gt_data["UnknownNumber"]
+                and sum(agent_data[key] for key in fields) >= sum(gt_data[key] for key in fields)
+            )
+            return {"functional_compare_error": False, "agent_type": "NumberResult",
+                    "baseline_type": "NumberResult", "functional_pass": int(matched),
+                    "agent_count": agent_data["PassNumber"], "baseline_count": gt_data["PassNumber"]}
+
         if agent_type == "BoolResult" and gt_type == "BoolResult":
             matched = agent_data.get("Status") == gt_data.get("Status")
             return {"functional_compare_error": False, "agent_type": "BoolResult",

@@ -25,11 +25,29 @@ def stable_arvo_build(source, directory, project=None):
             'make -j"$(nproc)" -C src/lib\nmake -j"$(nproc)" -C fuzz',
             source,
         )
+    prefix = ""
+    if project and Path(project).name.lower() == "harfbuzz":
+        # The original fuzz image has no system optional backends. Keep -m32
+        # builds from discovering 64-bit libraries installed for ordinary tests.
+        prefix = (
+            'case " $CFLAGS $CXXFLAGS " in\n'
+            '  *" -m32 "*) export PKG_CONFIG_PATH= PKG_CONFIG_LIBDIR=/opt/svb/fuzz-pkgconfig-empty ;;\n'
+            "esac\n"
+        )
+        source = re.sub(r"(?m)^mkdir all-fonts(?=\s|$)", "mkdir -p all-fonts", source)
+    if project and Path(project).name.lower() == "libsrtp":
+        directory_arg = shlex.quote(project)
+        prefix = (
+            f"if [ -f {directory_arg}/Makefile ]; then "
+            f"make -C {directory_arg} distclean; fi\n"
+        )
     lines = source.splitlines(keepends=True)
     position = 1 if lines and lines[0].startswith("#!") else 0
     command = "cd " + shlex.quote(directory) + "\n"
     if len(lines) <= position or lines[position] != command:
         lines.insert(position, command)
+    if prefix and prefix not in source:
+        lines.insert(position + 1, prefix)
     return "".join(lines)
 
 
@@ -94,7 +112,12 @@ def main():
             baseline = runtime.parse(
                 logs / "offline-reference.log", Path("/opt/svb/baseline.json")
             )
-            if baseline.get("FailList") or baseline.get("Status") is False:
+            if (
+                baseline.get("FailList")
+                or baseline.get("Status") is False
+                or baseline.get("FailNumber", 0)
+                or baseline.get("UnknownNumber", 0)
+            ):
                 reports = logs / "reference-failure-reports"
                 reports.mkdir(exist_ok=True)
                 diagnostic_text = (logs / "offline-reference.log").read_text(
@@ -118,7 +141,7 @@ def main():
                     raise RuntimeError(
                         "Missing reference-test dependency: " + ", ".join(missing)
                     )
-            if not (baseline.get("PassList") or baseline.get("Status") is True):
+            if not runtime.has_positive_evidence(baseline):
                 raise RuntimeError(
                     "Offline reference has no positive test evidence; exit=" + str(code)
                 )
@@ -141,7 +164,6 @@ def main():
                             + "\n"
                         )
             runtime.command(["dpkg-query", "-W"], logs / "packages.log")
-
 
 
 if __name__ == "__main__":

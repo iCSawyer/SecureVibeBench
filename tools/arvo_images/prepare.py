@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -99,9 +100,77 @@ def zstd_cli_tests(text):
     )
 
 
-def stable_functional(text, identifier=None):
+def stable_directories(text, repo_cwd=None):
+    text = re.sub(
+        r"(?m)^mkdir (build(?:-[A-Za-z0-9_-]+)?)(?=\s|$)", r"mkdir -p \1", text
+    )
+    if repo_cwd:
+        text = re.sub(
+            r"(?m)^cd " + re.escape(Path(repo_cwd).name) + r"[ \t]*$",
+            lambda match: "cd " + shlex.quote(repo_cwd),
+            text,
+            count=1,
+        )
+    return text
+
+
+def stable_miniz(text, identifier):
+    if identifier != "27413":
+        return text
+    text = re.sub(
+        r"(?m)^\.\./bin/example4 compressed_file\.zlib[ \t]*$",
+        "../bin/example4 compressed_file.zlib another_decompressed_file.txt",
+        text,
+    )
+    text = re.sub(
+        r"(?m)^\.\./bin/example5 c my_original_file\.txt[ \t]*$",
+        "../bin/example5 c my_original_file.txt compressed_by_example5.zlib",
+        text,
+    )
+    text = re.sub(
+        r"(?m)^\.\./bin/example5 d compressed_by_example5\.zlib[ \t]*$",
+        "../bin/example5 d compressed_by_example5.zlib decompressed_by_example5.txt",
+        text,
+    )
+    checks = {
+        "../bin/example1": "example1",
+        "../bin/example2": "example2",
+        "diff my_original_file.txt my_decompressed_file.txt": "example3-roundtrip",
+        "diff my_original_file.txt another_decompressed_file.txt": "example4-decompression",
+        "diff my_original_file.txt decompressed_by_example5.txt": "example5-roundtrip",
+        "../bin/example6": "example6",
+    }
+    for command, name in checks.items():
+        marker = "echo SVB_MINIZ_CASE " + name + " PASS"
+        if marker not in text:
+            text = re.sub(
+                r"(?m)^" + re.escape(command) + r"[ \t]*$",
+                lambda match: command + "\n" + marker,
+                text,
+                count=1,
+            )
+    return text if text.startswith("set -e\n") else "set -e\n" + text
+
+
+def stable_mruby(text, repo_cwd):
+    if not repo_cwd or Path(repo_cwd).name != "mruby":
+        return text
+    clean = "unset CC CXX CFLAGS CXXFLAGS CPPFLAGS LDFLAGS\nexport CC=gcc CXX=g++\nrake clean\n"
+    if clean not in text:
+        text = re.sub(
+            r"(?m)^(rake -j[^\n]*)$",
+            lambda match: clean + match.group(1),
+            text,
+            count=1,
+        )
+    return text
+
+
+def stable_functional(text, identifier=None, repo_cwd=None):
     # Preserve test commands; permit rerunning scripts that create a build folder.
-    result = re.sub(r"(?m)^mkdir build(?=\s|$)", "mkdir -p build", text)
+    result = stable_miniz(
+        stable_mruby(stable_directories(text, repo_cwd), repo_cwd), identifier
+    )
     if identifier in AUTOTOOLS_CLEAN_TASKS:
         result = "if [ -f Makefile ]; then make distclean; fi\n" + result
     if identifier in FREETYPE_TASKS:
@@ -120,7 +189,10 @@ def stable_functional(text, identifier=None):
     return result
 
 
-def stable_reference(text, identifier):
+def stable_reference(text, identifier, repo_cwd=None):
+    text = stable_miniz(
+        stable_mruby(stable_directories(text, repo_cwd), repo_cwd), identifier
+    )
     if identifier in FREETYPE_TASKS:
         text = text.replace(" libtool-dev", "").replace(
             './configure LIBS="-lpthread"',
@@ -259,7 +331,9 @@ class Builder:
 
     def foundation(self):
         functional = stable_functional(
-            (self.source / "environment/svb/functional.sh").read_text(), self.id
+            (self.source / "environment/svb/functional.sh").read_text(),
+            self.id,
+            self.config["metadata"]["repo_cwd"],
         )
         functional_sha = hashlib.sha256(functional.encode()).hexdigest()
         if self.state.get("foundation_image"):
@@ -276,6 +350,7 @@ class Builder:
                     reference = stable_reference(
                         (self.source / "environment/svb/reference.sh").read_text(),
                         self.id,
+                        self.config["metadata"]["repo_cwd"],
                     )
                     (overlay / "reference.sh").write_text(reference)
                     (self.task / "environment/svb/reference.sh").write_text(reference)
@@ -312,13 +387,19 @@ class Builder:
             shutil.copy2(compatibility, self.task / "environment/svb/prepare.sh")
         reference = context / "svb/reference.sh"
         original_reference = reference.read_text()
-        reference.write_text(stable_reference(original_reference, self.id))
+        reference.write_text(
+            stable_reference(
+                original_reference, self.id, self.config["metadata"]["repo_cwd"]
+            )
+        )
         if reference.read_text() != original_reference:
             (self.output / "reference-before.sh").write_text(original_reference)
             shutil.copy2(reference, self.task / "environment/svb/reference.sh")
         functional = context / "svb/functional.sh"
         original = functional.read_text()
-        functional.write_text(stable_functional(original, self.id))
+        functional.write_text(
+            stable_functional(original, self.id, self.config["metadata"]["repo_cwd"])
+        )
         if original != functional.read_text():
             (self.output / "functional-before.sh").write_text(original)
             shutil.copy2(functional, self.task / "environment/svb/functional.sh")
@@ -326,6 +407,13 @@ class Builder:
             json.dumps(self.config["metadata"], indent=2) + "\n"
         )
         shutil.copy2(HERE / "container_prepare.py", context / "svb/image_prepare.py")
+        self.state["shared_assets_sha256"] = {
+            name: checksum(context / "svb" / name)
+            for name in ("runtime.py", "parse_test_report.py", "semantics.py")
+        }
+        self.state["preparation_helper_sha256"] = checksum(
+            context / "svb/image_prepare.py"
+        )
         uv = context / "toolchain/bin/uv"
         uv.parent.mkdir(parents=True, exist_ok=True)
         self.state["toolchain"] = copy_uv(uv, self.args.output / "toolchain")
@@ -598,6 +686,13 @@ class Builder:
             self.save()
             foundation = self.foundation()
             self.candidate = self.snapshot(foundation)
+            if (
+                json.loads((self.work / "baseline.json").read_text()).get("type")
+                == "NumberResult"
+            ):
+                self.config["metadata"]["reward_policy"] = (
+                    "count-results-no-regression-v1"
+                )
             image = self.freeze()
             self.verify(image)
             registry = self.publish(image) if self.args.publish else None

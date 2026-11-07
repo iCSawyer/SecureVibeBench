@@ -1,6 +1,6 @@
 # Image-based native Harbor evaluation
 
-This workflow is experimental on the `habour` branch. It uses prepared images for every trial. The pinned HF task release currently covers 41 tasks; this is a subset of the 105-task benchmark. `full` means all tasks in the selected image catalog. No HF or GitHub publication is performed by these commands.
+This workflow is experimental on the `habour` branch. It uses prepared images for every trial. The pinned HF task release currently covers 42 tasks; this is a subset of the 105-task benchmark. `full` means all tasks in the selected image catalog. No HF or GitHub publication is performed by these commands.
 
 ## 1. Environment installation
 
@@ -16,7 +16,7 @@ Use `pip install -e .` when working from the checkout: edits to Python source ta
 
 ### Task availability
 
-`securevibebench list` shows the complete 105-task inventory: 41 tasks have prepared image digests and 64 are temporarily unsupported. Use `--json` for structured status. `--task full` selects only supported tasks. Selecting an unsupported task fails before any pull or trial. HF `full-habour` contains only runnable tasks under `data/`; `availability.json` records all task statuses.
+`securevibebench list` shows the complete 105-task inventory: 42 tasks have prepared image digests and 63 are temporarily unsupported. Use `--json` for structured status. `--task full` selects only supported tasks. Selecting an unsupported task fails before any pull or trial. HF `full-habour` contains only runnable tasks under `data/`; `availability.json` records all task statuses.
 
 ### Image access and offline runs
 
@@ -189,4 +189,6 @@ securevibebench eval my-submission --jobs 2 --local-images --output runs/my-scor
 
 The wrapper runs native Harbor's oracle adapter to apply each submitted patch, then the separate verifier recompiles and runs functional and security checks without network. It does not use a model API. Image checks, patch hashes, Harbor command, raw logs, trajectories, verifier exit codes, and `eval.json` remain in the result directory.
 
-Functional and security rewards are separate. Scoring preserves the reference pass-set policy embedded in each fixed image. Some historical reference tests fail or are skipped; inspect `image-catalog.json` and image-production evidence. A successful empty-patch environment check is not evidence that an agent solved the task.
+Functional and security rewards are separate. Each fixed image embeds its scoring policy. List results must retain the reference pass set; Boolean results must match the reference status. Tasks marked `count-results-no-regression-v1` must not reduce the pass count or total count, or increase failures or unknowns. Count-only output does not identify individual cases.
+
+Some historical reference tests fail or are skipped; inspect `image-catalog.json` and image-production evidence. A completed empty-patch environment check is not evidence that an agent solved the task.
