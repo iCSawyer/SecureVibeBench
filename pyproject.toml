@@ -1,6 +1,7 @@
 [build-system]
-requires = ["setuptools>=77"]
-build-backend = "setuptools.build_meta"
+requires = ["setuptools>=77", "huggingface-hub>=1.33,<2", "filelock>=3.16,<4"]
+build-backend = "build_backend"
+backend-path = ["."]
 
 [project]
 name = "securevibebench"
@@ -45,7 +46,7 @@ include-package-data = false
 securevibebench_evaluation = "evaluation"
 
 [tool.setuptools.package-data]
-securevibebench_evaluation = ["dataset-lock.json", "harbor_assets/*.py", "framework/lock.json"]
+securevibebench_evaluation = ["dataset-lock.json", "harbor_assets/*.py", "framework/lock.json", "bundled/tasks.tar.gz"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -3,9 +3,9 @@
 import hashlib
 import io
 import json
-from pathlib import Path
 import shutil
 import tarfile
+from pathlib import Path
 
 import pytest
 from securevibebench_evaluation import dataset
@@ -44,6 +44,7 @@ def release(tmp_path, monkeypatch):
         "manifest_sha256": digest(source / "manifest.json"),
     }
     monkeypatch.setattr(dataset, "release", lambda: lock)
+    monkeypatch.setattr(dataset, "HERE", tmp_path / "package")
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
     return archive, lock
 
@@ -131,3 +132,37 @@ def test_unsafe_archive_members_are_rejected(tmp_path, kind):
             bundle.addfile(entry, io.BytesIO(b""))
     with pytest.raises(ValueError, match="Unsafe HF archive"):
         dataset.extract(path, tmp_path / "destination")
+
+
+def test_installed_bundle_restores_an_empty_cache_offline(release, monkeypatch):
+    import huggingface_hub
+
+    archive, _ = release
+    bundled = dataset.bundled_archive()
+    bundled.parent.mkdir(parents=True)
+    shutil.copyfile(archive, bundled)
+    monkeypatch.setattr(
+        huggingface_hub,
+        "hf_hub_download",
+        lambda *args, **kwargs: pytest.fail("Installed data contacted HF"),
+    )
+    root = dataset.snapshot(local_only=True)
+    assert (root / "data/securevibebench-992/task.toml").is_file()
+    assert dataset.snapshot(local_only=True) == root
+
+
+def test_changed_installed_bundle_fails_before_creating_cache(release, monkeypatch):
+    import huggingface_hub
+
+    _, lock = release
+    bundled = dataset.bundled_archive()
+    bundled.parent.mkdir(parents=True)
+    bundled.write_bytes(b"changed archive")
+    monkeypatch.setattr(
+        huggingface_hub,
+        "hf_hub_download",
+        lambda *args, **kwargs: pytest.fail("Changed data triggered network"),
+    )
+    with pytest.raises(ValueError, match="archive checksum"):
+        dataset.snapshot(local_only=True)
+    assert not dataset.cache_root(lock).exists()

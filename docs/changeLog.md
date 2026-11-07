@@ -16,6 +16,8 @@
 
 ## Unreleased (`habour` branch)
 
+- Download and verify the pinned HF task data during regular and editable installation; bundle the snapshot for offline cache recovery. Docker images remain acquired before trials.
+
 - Consolidate accepted task images under `ghcr.io/icsawyer/securevibebench`, preserve manifest digests, and verify anonymous Docker pulls.
 
 - Add 20 images to the existing Public GHCR package with task-specific tags; expand the pinned HF catalog to 41 supported tasks.

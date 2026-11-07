@@ -53,7 +53,11 @@ securevibebench-ID/
 
 A task cannot provide a Dockerfile as a fallback. Trial definitions are copied to the run directory, where the registry reference is replaced with the verified local image ID. Host DNS and CPU placement are configured in this copy. Cached task definitions remain unchanged. All selected tasks are checked before a generation job starts.
 
-The default task cache is `$XDG_CACHE_HOME/securevibebench/datasets/<revision>/data`, or `~/.cache/securevibebench/datasets/<revision>/data` when XDG_CACHE_HOME is unset. `list`, `pull`, `generate`, and `eval` obtain the pinned release when the cache is missing. `--local-images` prohibits HF and registry access and requires a cached release. Use `pull` while online before running evaluation offline. Help and package installation do not download task data.
+The default task cache is `$XDG_CACHE_HOME/securevibebench/datasets/<revision>/data`, or `~/.cache/securevibebench/datasets/<revision>/data` when XDG_CACHE_HOME is unset.
+
+`pip install .` and `pip install -e .` download the pinned HF release during package construction, verify the archive and file checksums, and populate this cache. A failed download or checksum check aborts installation. The verified archive is included in regular wheels and retained in editable checkouts; it can restore a missing cache without HF access. Installing a prebuilt wheel gets this snapshot with the wheel, without a separate HF request.
+
+`--local-images` prohibits HF and registry access. Docker images are acquired by `pull`, `generate`, or `eval`; use `pull` while online before running evaluation offline. Help does not download task data.
 
 ### Network phases
 
@@ -93,7 +97,7 @@ securevibebench generate --model 'openai/<model>' --task 992,32345 --jobs 2 --lo
 securevibebench generate --model 'openai/<model>' --task full --jobs 2 --local-images --eval
 ```
 
-`--task full`, or omission of `--task`, selects all tasks under `--tasks`. The default root is the verified HF cache containing 21 runnable tasks. `--tasks example --task full` selects the single example. Unknown IDs fail before any trial. `--jobs` controls native Harbor concurrency. CPU and memory budgets remain in each task definition.
+`--task full`, or omission of `--task`, selects all tasks under `--tasks`. The default root is the verified HF cache of supported tasks. `--tasks example --task full` selects the single example. Unknown IDs fail before any trial. `--jobs` controls native Harbor concurrency. CPU and memory budgets remain in each task definition.
 
 ### Agent and model configuration
 

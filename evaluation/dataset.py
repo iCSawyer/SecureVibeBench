@@ -5,10 +5,10 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from pathlib import Path
 import shutil
 import tarfile
 import tempfile
+from pathlib import Path
 
 from filelock import FileLock
 
@@ -29,7 +29,8 @@ def checksum(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def verify(root, lock):
+def verify_files(root, lock):
+    """Check the release without importing evaluation dependencies."""
     manifest_path = root / "manifest.json"
     if checksum(manifest_path) != lock["manifest_sha256"]:
         raise ValueError("HF task manifest checksum mismatch")
@@ -47,13 +48,9 @@ def verify(root, lock):
     }
     if expected_files != actual_files:
         raise ValueError("HF task file set changed: " + str(root))
-    from .images import read_task
-
     configs = list((root / "data").glob("*/task.toml"))
     if len(configs) != lock["task_count"] or len(configs) != manifest["task_count"]:
         raise ValueError("HF task count mismatch")
-    for path in configs:
-        read_task(path.parent)
     availability = json.loads((root / "availability.json").read_text())
     supported = {
         row["task"] for row in availability["tasks"] if row["status"] == "supported"
@@ -61,6 +58,19 @@ def verify(root, lock):
     if supported != {path.parent.name for path in configs}:
         raise ValueError("HF task availability mismatch")
     return root
+
+
+def verify(root, lock):
+    verify_files(root, lock)
+    from .images import read_task
+
+    for path in (root / "data").glob("*/task.toml"):
+        read_task(path.parent)
+    return root
+
+
+def bundled_archive():
+    return HERE / "bundled" / "tasks.tar.gz"
 
 
 def extract(archive, destination):
@@ -87,24 +97,27 @@ def snapshot(*, local_only=False):
     with FileLock(str(root) + ".lock"):
         if root.exists():
             return verify(root, lock)
-        from huggingface_hub import hf_hub_download
+        archive = bundled_archive()
+        if not archive.is_file():
+            from huggingface_hub import hf_hub_download
 
-        try:
-            archive = Path(
-                hf_hub_download(
-                    lock["repo_id"],
-                    lock["archive"]["filename"],
-                    repo_type="dataset",
-                    revision=lock["revision"],
-                    local_files_only=local_only,
+            try:
+                archive = Path(
+                    hf_hub_download(
+                        lock["repo_id"],
+                        lock["archive"]["filename"],
+                        repo_type="dataset",
+                        revision=lock["revision"],
+                        local_files_only=local_only,
+                    )
                 )
-            )
-        except Exception as exc:
-            if local_only:
-                raise ValueError(
-                    "HF task cache is missing; run securevibebench pull before going offline"
-                ) from exc
-            raise
+            except Exception as exc:
+                if local_only:
+                    raise ValueError(
+                        "HF task cache is missing; reinstall the package or run "
+                        "securevibebench pull before going offline"
+                    ) from exc
+                raise
         if checksum(archive) != lock["archive"]["sha256"]:
             raise ValueError("HF task archive checksum mismatch")
         with tempfile.TemporaryDirectory(
