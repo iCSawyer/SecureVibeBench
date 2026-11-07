@@ -22,7 +22,7 @@ reward_policy = "original-evaluator-separate-metrics"
 hf_revision = "5fa48dd35fe29565adaa020dd2d333b650f3e621"
 
 [metadata.image]
-reference = "ghcr.io/icsawyer/securevibebench-arvo-992@sha256:8a2d1bfce51e3faa00a0e7d1f5ad95de4798b4290d228670c7de516260354718"
+reference = "ghcr.io/icsawyer/securevibebench@sha256:8a2d1bfce51e3faa00a0e7d1f5ad95de4798b4290d228670c7de516260354718"
 id = "sha256:34b103519f4c2794c98159203eabf79562810ed53d470fc2f84c299895f0b6e6"
 platform = "linux/amd64"
 agents = [
@@ -60,4 +60,4 @@ cpus = 4
 memory_mb = 8192
 storage_mb = 20480
 network_mode = "no-network"
-docker_image = "ghcr.io/icsawyer/securevibebench-arvo-992@sha256:8a2d1bfce51e3faa00a0e7d1f5ad95de4798b4290d228670c7de516260354718"
+docker_image = "ghcr.io/icsawyer/securevibebench@sha256:8a2d1bfce51e3faa00a0e7d1f5ad95de4798b4290d228670c7de516260354718"

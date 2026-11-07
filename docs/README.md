@@ -1,6 +1,6 @@
 # Image-based native Harbor evaluation
 
-This workflow is experimental on the `habour` branch. It uses prepared images for every trial. The pinned HF task release currently covers 21 tasks; this is a subset of the 105-task benchmark. `full` means all tasks in the selected image catalog. No HF or GitHub publication is performed by these commands.
+This workflow is experimental on the `habour` branch. It uses prepared images for every trial. The pinned HF task release currently covers 41 tasks; this is a subset of the 105-task benchmark. `full` means all tasks in the selected image catalog. No HF or GitHub publication is performed by these commands.
 
 ## 1. Environment installation
 
@@ -16,15 +16,11 @@ Use `pip install -e .` when working from the checkout: edits to Python source ta
 
 ### Task availability
 
-`securevibebench list` shows the complete 105-task inventory: 21 tasks have prepared image digests and 84 are temporarily unsupported. Use `--json` for structured status. `--task full` selects only supported tasks. Selecting an unsupported task fails before any pull or trial. HF `full-habour` contains only runnable tasks under `data/`; `availability.json` records all task statuses.
+`securevibebench list` shows the complete 105-task inventory: 41 tasks have prepared image digests and 64 are temporarily unsupported. Use `--json` for structured status. `--task full` selects only supported tasks. Selecting an unsupported task fails before any pull or trial. HF `full-habour` contains only runnable tasks under `data/`; `availability.json` records all task statuses.
 
 ### Image access and offline runs
 
-The GHCR packages are private. Your GitHub account needs package access. Use a personal access token with `read:packages` when Docker asks for a password. Do not put the token in task files or command arguments.
-
-```bash
-docker login ghcr.io
-```
+The published GHCR images are public and can be pulled without GitHub authentication. No package token or `docker login` step is required.
 
 For a normal run, `generate` and `eval` download missing task files and images automatically. No separate preparation command is required.
 

@@ -16,6 +16,12 @@
 
 ## Unreleased (`habour` branch)
 
+- Consolidate accepted task images under `ghcr.io/icsawyer/securevibebench`, preserve manifest digests, and verify anonymous Docker pulls.
+
+- Add 20 images to the existing Public GHCR package with task-specific tags; expand the pinned HF catalog to 41 supported tasks.
+
+- Verify anonymous access to all 21 prepared GHCR images and remove the package login requirement from user instructions.
+
 - Redact known credential values from completed native generation artifacts while preserving trajectories.
 - Pass named host environment variables with native Harbor references, and clean libplist sanitizer objects before ordinary tests.
 - Link the Lua dependency enabled by lwan reference preparation into its fuzz binaries.

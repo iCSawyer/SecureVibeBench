@@ -2,9 +2,11 @@
 """Export digest-based Harbor tasks from a verified image distribution."""
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import shutil
+import tempfile
 import tomllib
 
 from securevibebench_evaluation.harbor_native import write_config
@@ -52,6 +54,98 @@ def export_task(source, target, image):
     read_task(target)
 
 
+def export_run(run, output):
+    """Export the selected tasks after Public publication and offline acceptance."""
+    identifiers = json.loads((run / "selection.json").read_text())["selected"]
+    images = []
+    for identifier in identifiers:
+        task = run / "tasks" / identifier
+        state = json.loads((task / "status.json").read_text())
+        registry = state.get("registry", {})
+        if (
+            state["state"] != "completed"
+            or registry.get("visibility") != "public"
+            or registry.get("anonymous_pull_verified") is not True
+            or state.get("verification", {}).get("native_setup_offline") is not True
+            or state.get("image_audit", {}).get("credentials_present") is not False
+        ):
+            raise ValueError(
+                "Task has not passed Public image acceptance: " + identifier
+            )
+        baseline = task / "work/baseline.json"
+        expected = state["offline_gold_baseline_sha256"]
+        if hashlib.sha256(baseline.read_bytes()).hexdigest() != expected:
+            raise ValueError("Reference baseline checksum mismatch: " + identifier)
+        evidence = task / "bundle/evidence"
+        version = json.loads((evidence / "native-install/result.json").read_text())[
+            "agent_info"
+        ]["version"]
+        images.append(
+            {
+                "task": identifier,
+                "image_id": state["frozen_image"],
+                "base_image": state["base_image"],
+                "base_image_id": state["base_image_id"],
+                "reference_baseline_sha256": expected,
+                "image_audit": state["image_audit"],
+                "verification": state["verification"],
+                "registry": registry,
+                "toolchain": state["toolchain"],
+                "native_mini_version": version,
+            }
+        )
+    if not images or len(set(identifiers)) != len(identifiers):
+        raise ValueError("Select distinct accepted tasks")
+    if output.exists():
+        raise FileExistsError("Choose a new output directory")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(
+        prefix=".svb-public-catalog-", dir=output.parent
+    ) as temporary:
+        staging = Path(temporary)
+        for image in images:
+            name = "securevibebench-" + image["task"]
+            export_task(
+                run / "tasks" / image["task"] / "bundle/tasks" / name,
+                staging / name,
+                image,
+            )
+        contracts = []
+        for image in images:
+            name = "securevibebench-" + image["task"]
+            contract = tomllib.loads((staging / name / "task.toml").read_text())[
+                "metadata"
+            ]["image"]
+            evidence = run / "tasks" / image["task"] / "bundle/evidence"
+            contracts.append(
+                {
+                    **contract,
+                    "task": image["task"],
+                    "visibility": "public",
+                    "anonymous_manifest_verified": True,
+                    "registry": image["registry"],
+                    "reference_source": json.loads(
+                        (evidence / "gold/source.json").read_text()
+                    ),
+                    "starting_source": json.loads(
+                        (evidence / "start/source.json").read_text()
+                    ),
+                }
+            )
+        (staging / "image-catalog.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 2,
+                    "task_count": len(contracts),
+                    "images": contracts,
+                },
+                indent=2,
+            )
+            + "\n"
+        )
+        staging.replace(output)
+
+
 def export(bundle, output):
     manifest = json.loads((bundle / "manifest.json").read_text())
     if output.exists():
@@ -73,7 +167,12 @@ def export(bundle, output):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--bundle", type=Path, required=True)
+    inputs = parser.add_mutually_exclusive_group(required=True)
+    inputs.add_argument("--bundle", type=Path)
+    inputs.add_argument("--run", type=Path, help="Completed Public image run")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    export(args.bundle.resolve(), args.output.resolve())
+    if args.run:
+        export_run(args.run.resolve(), args.output.resolve())
+    else:
+        export(args.bundle.resolve(), args.output.resolve())

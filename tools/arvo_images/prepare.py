@@ -1,64 +1,42 @@
 #!/usr/bin/env python3
-"""Prepare, verify, and privately publish native Harbor ARVO environments."""
+"""Prepare, verify, and publish native Harbor ARVO environments to Public packages."""
 
 import argparse
-import base64
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone
 import hashlib
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
 import threading
 import time
-import traceback
 import tomllib
-import urllib.error
-import urllib.request
+import traceback
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import UTC, datetime
+from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "cpython_image"))
-from prepare import Builder as CPythonBuilder
-from freeze import native_install, audit_image
 from complete_bundle import checksum
+from freeze import audit_image, native_install
+from prepare import Builder as CPythonBuilder
 from securevibebench_evaluation.harbor_native import select_cpus, write_config
+
 for parent in Path(__file__).resolve().parents:
-    if (parent / 'tools/image_build').is_dir():
+    if (parent / "tools/image_build").is_dir():
         sys.path.insert(0, str(parent))
         break
-from tools.image_build.task_assets import materialize
-from tools.image_build.toolchain import copy_uv, configure_package_installation
 from tools.image_build.metadata import REPOSITORY_URL, SOURCE_LABEL
+from tools.image_build.registry import DEFAULT_PACKAGE, api, public_package
+from tools.image_build.registry import publish as publish_public
+from tools.image_build.task_assets import materialize
+from tools.image_build.toolchain import configure_package_installation, copy_uv
 
 
 def now():
-    return datetime.now(timezone.utc).isoformat()
-
-
-def api(endpoint):
-    config = json.loads((Path.home() / ".docker/config.json").read_text())
-    _, token = (
-        base64.b64decode(config["auths"]["ghcr.io"]["auth"]).decode().split(":", 1)
-    )
-    request = urllib.request.Request(
-        "https://api.github.com/" + endpoint,
-        headers={
-            "Authorization": "Bearer " + token,
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-        },
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=45) as response:
-            return json.load(response)
-    except urllib.error.HTTPError as error:
-        if error.code == 404:
-            return None
-        raise
+    return datetime.now(UTC).isoformat()
 
 
 def image_info(image):
@@ -67,8 +45,47 @@ def image_info(image):
     )[0]
 
 
-FREETYPE_TASKS = {"58663", "58660", "58671", "60475", "58428", "60467"}
-AUTOTOOLS_CLEAN_TASKS = {"32340", "32345", "20702", "48736", "59438", "64337"}
+FREETYPE_TASKS = {
+    "58663",
+    "58660",
+    "58671",
+    "60475",
+    "58428",
+    "60467",
+    "54044",
+    "56455",
+    "56510",
+    "58626",
+}
+AUTOTOOLS_CLEAN_TASKS = {
+    "48883",
+    "49901",
+    "52174",
+    "52435",
+    "57369",
+    "60003",
+    "32340",
+    "32345",
+    "20702",
+    "48736",
+    "59438",
+    "64337",
+}
+
+
+OPENSC_TASKS = {"18482", "18890", "32149", "49248", "60616", "63587", "64898"}
+OPENSC_ORDINARY_CLEAN = (
+    "if [ -f src/tools/Makefile ]; then make -C src/tools clean; fi\n"
+    "if [ -f Makefile ]; then make distclean; fi\n"
+)
+
+NDPI_TASKS = {"48883", "49901", "52174", "52435", "57369", "60003"}
+NDPI_ORDINARY_ENV = (
+    "export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig\n"
+    'export PKG_CONFIG_LIBDIR="$PKG_CONFIG_PATH"\n'
+    'export LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:${LIBRARY_PATH:-}"\n'
+    'export LDFLAGS="-L/usr/lib/x86_64-linux-gnu ${LDFLAGS:-}"\n'
+)
 
 
 def zstd_cli_tests(text):
@@ -96,6 +113,10 @@ def stable_functional(text, identifier=None):
         result = "make clean\nunset CC CXX CFLAGS CXXFLAGS LDFLAGS\n" + zstd_cli_tests(
             result
         )
+    if identifier in NDPI_TASKS:
+        result = NDPI_ORDINARY_ENV + result
+    if identifier in OPENSC_TASKS and not result.startswith(OPENSC_ORDINARY_CLEAN):
+        result = OPENSC_ORDINARY_CLEAN + result
     return result
 
 
@@ -121,6 +142,10 @@ def stable_reference(text, identifier):
         )
     if identifier == "3522":
         text = zstd_cli_tests(text)
+    if identifier in NDPI_TASKS:
+        text = NDPI_ORDINARY_ENV + text
+    if identifier in OPENSC_TASKS and not text.startswith(OPENSC_ORDINARY_CLEAN):
+        text = OPENSC_ORDINARY_CLEAN + text
     return text
 
 
@@ -189,6 +214,7 @@ class Builder:
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             text=True,
+            check=False,
         )
         if existing.returncode == 0:
             info = json.loads(existing.stdout)[0]
@@ -325,6 +351,17 @@ class Builder:
         )
         self.state["base_image"] = pinned
         self.state["base_image_id"] = info["Id"]
+        self.state["arvo_build_cwd"] = info["Config"].get("WorkingDir") or "/"
+        (context / "svb/image-metadata.json").write_text(
+            json.dumps(
+                {
+                    **self.config["metadata"],
+                    "arvo_build_cwd": self.state["arvo_build_cwd"],
+                },
+                indent=2,
+            )
+            + "\n"
+        )
         source = (context / "Dockerfile").read_text().splitlines()
         source[0] = "FROM " + pinned
         source = [
@@ -399,7 +436,7 @@ class Builder:
             ],
         )
         self.candidate = image_info(tag)["Id"]
-        self.phase("probe", self.candidate)
+        # The post-freeze verifier performs the full offline compile and test run.
         self.state["candidate_image"] = self.candidate
         self.save()
         return self.candidate
@@ -500,7 +537,10 @@ class Builder:
                 self.work / ("empty-submission-eval-archive-" + str(time.time_ns()))
             )
         from tools.image_build.verify import score_local
-        evaluation = score_local(self, submission.parent, result, image, "offline-empty-submission")
+
+        evaluation = score_local(
+            self, submission.parent, result, image, "offline-empty-submission"
+        )
         records = evaluation.get("results", [])
         if len(records) != 1 or records[0].get("exception"):
             raise RuntimeError("Offline submission verification failed")
@@ -538,38 +578,15 @@ class Builder:
             raise RuntimeError(
                 "Refuse publication before offline verification and credential audit"
             )
-        if self.state.get("registry"):
-            return self.state["registry"]
-        name = "securevibebench-arvo-" + self.id
-        endpoint = "users/" + self.args.owner + "/packages/container/" + name
-        package = api(endpoint)
-        if package and package.get("visibility") != "private":
-            raise RuntimeError("Refuse to push to a non-private package")
-        tag = "ghcr.io/" + self.args.owner.lower() + "/" + name + ":offline-20261107"
-        self.run("registry-tag", ["docker", "tag", image, tag])
-        self.run("registry-push", ["docker", "push", tag])
-        package = api(endpoint)
-        if not package or package.get("visibility") != "private":
-            raise RuntimeError("Private visibility not verified")
-        reference = next(
-            item
-            for item in image_info(tag)["RepoDigests"]
-            if item.startswith(tag.split(":")[0] + "@")
-        )
-        self.run("registry-pull", ["docker", "pull", reference])
-        if image_info(reference)["Id"] != image:
-            raise RuntimeError("Registry image identity mismatch")
-        self.state["registry"] = {
-            "tag": tag,
-            "digest_reference": reference,
-            "visibility": "private",
-            "package_url": package["html_url"],
-        }
+        self.state["registry"] = publish_public(self, image)
         self.save()
         return self.state["registry"]
 
     def execute(self):
-        if self.state["state"] == "completed":
+        registry = self.state.get("registry", {})
+        if self.state["state"] == "completed" and (
+            not self.args.publish or registry.get("anonymous_pull_verified") is True
+        ):
             return self.state
         try:
             if self.state.get("error"):
@@ -604,7 +621,7 @@ class Builder:
             write_config(self.task / "task.toml", config)
             self.state.update(state="completed", finished_at=now())
             self.save()
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001 -- Record the failure and continue the batch.
             (self.logs / ("exception-" + str(time.time_ns()) + ".log")).write_text(
                 traceback.format_exc()
             )
@@ -625,6 +642,11 @@ def main():
     parser.add_argument("--memory-mb", type=int, default=8192)
     parser.add_argument("--owner", default="icsawyer")
     parser.add_argument("--publish", action="store_true")
+    parser.add_argument(
+        "--package",
+        default=DEFAULT_PACKAGE,
+        help="Existing Public GHCR package; images use task-specific tags",
+    )
     args = parser.parse_args()
     args.output = args.output.resolve()
     args.output.mkdir(parents=True, exist_ok=True)
@@ -632,6 +654,12 @@ def main():
         user = api("user")
         if not user or user["login"].lower() != args.owner.lower():
             parser.error("Authenticated registry owner differs")
+        for name in (
+            [args.package]
+            if args.package
+            else ["securevibebench-arvo-" + identifier for identifier in args.task]
+        ):
+            public_package(args.owner, name)
     (args.output / "command.json").write_text(json.dumps(sys.argv, indent=2) + "\n")
     states = {}
     lock = threading.Lock()

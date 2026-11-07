@@ -69,6 +69,8 @@ def stage(source, all_tasks, catalog, output, framework=None):
             "Image catalog, source tasks, and benchmark inventory disagree"
         )
     for identifier, task in tasks.items():
+        if entries[identifier].get("visibility") != "public" or entries[identifier].get("anonymous_manifest_verified") is not True:
+            raise ValueError("HF task requires verified anonymous Public image access: " + identifier)
         config = read_task(task)
         image = config["metadata"]["image"]
         if any(
@@ -103,7 +105,7 @@ def stage(source, all_tasks, catalog, output, framework=None):
                 path="data/" + row["task"],
                 image_reference=image["reference"],
                 image_id=image["id"],
-                image_visibility="private",
+                image_visibility=entries[identifier]["visibility"],
                 agents=image["agents"],
             )
         else:

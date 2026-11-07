@@ -98,7 +98,11 @@ class Builder:
     def collect(self, container, name):
         path = self.bundle/'evidence'/name
         path.parent.mkdir(exist_ok=True)
-        self.run(name+'-logs',['docker','cp',container+':/opt/svb/preparation',str(path)],check=False)
+        if path.exists():
+            archive = path.parent / 'archive'
+            archive.mkdir(exist_ok=True)
+            path.rename(archive / (name + '-' + str(time.time_ns())))
+        self.run(name+'-logs',['docker','cp',container+':/opt/svb/preparation/.',str(path)],check=False)
 
     def core(self):
         context = self.work/'foundation'

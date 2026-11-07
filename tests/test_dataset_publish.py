@@ -37,7 +37,7 @@ def staged(tmp_path):
     unavailable = all_tasks / 'securevibebench-999'
     unavailable.mkdir()
     (unavailable / 'task.toml').write_text('[metadata]\nrepo_cwd="/src/unavailable"\n')
-    catalog = {'task_count': len(ids), 'images': [dict(read_task(source / ('securevibebench-'+identifier))['metadata']['image'], task=identifier) for identifier in ids]}
+    catalog = {'task_count': len(ids), 'images': [dict(read_task(source / ('securevibebench-'+identifier))['metadata']['image'], task=identifier, visibility='public', anonymous_manifest_verified=True) for identifier in ids]}
     path = tmp_path / 'catalog.json'
     path.write_text(json.dumps(catalog))
     output = tmp_path / 'stage'
@@ -55,6 +55,7 @@ def test_stage_contains_only_digest_tasks_and_marks_others_unsupported(staged):
     unsupported = next(row for row in records if row['localid'] == '999')
     assert unsupported['status'] == 'unsupported'
     assert unsupported['reason'] == 'missing_prepared_image'
+    assert all(row['image_visibility'] == 'public' for row in records if row['status'] == 'supported')
     assert not (output / 'data/securevibebench-999').exists()
     assert not list(output.rglob('Dockerfile'))
     with tarfile.open(output / 'tasks.tar.gz') as archive:

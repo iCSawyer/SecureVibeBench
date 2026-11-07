@@ -2,7 +2,7 @@
 
 import importlib.util
 from pathlib import Path
-from types import SimpleNamespace
+
 import pytest
 
 spec = importlib.util.spec_from_file_location(
@@ -28,22 +28,17 @@ def test_publish_requires_verified_environment():
         builder.publish("sha256:fake")
 
 
-def test_public_package_is_never_overwritten(monkeypatch):
+def test_publication_uses_the_public_registry_policy(monkeypatch):
     builder = object.__new__(module.Builder)
-    builder.id = "992"
-    builder.args = SimpleNamespace(owner="icsawyer")
     builder.state = {
         "verification": {"native_setup_offline": True},
         "image_audit": {"credentials_present": False},
     }
-    monkeypatch.setattr(module, "api", lambda endpoint: {"visibility": "public"})
-    monkeypatch.setattr(
-        builder,
-        "run",
-        lambda *args, **kwargs: pytest.fail("Must not tag or push a public package"),
-    )
-    with pytest.raises(RuntimeError, match="non-private"):
-        builder.publish("sha256:fake")
+    expected = {"visibility": "public", "anonymous_pull_verified": True}
+    monkeypatch.setattr(module, "publish_public", lambda target, image: expected)
+    monkeypatch.setattr(builder, "save", lambda: None)
+    assert builder.publish("sha256:verified") == expected
+    assert builder.state["registry"] == expected
 
 
 def test_oniguruma_cleans_sanitizer_objects_before_ordinary_build():
@@ -100,3 +95,21 @@ def test_zstd_cli_runner_preserves_full_tests_and_native_interface():
     assert "./playTests.sh" in result
     assert "make -C tests fullbench && ./tests/fullbench" in result
     assert "make -C tests zstreamtest && ./tests/zstreamtest" in result
+
+
+def test_ndpi_ordinary_tests_prefer_system_dependencies():
+    source = "./autogen.sh\nmake check\n"
+    prepared = module.stable_functional(source, "48883")
+    assert 'export PKG_CONFIG_LIBDIR="$PKG_CONFIG_PATH"' in prepared
+    assert "/usr/lib/x86_64-linux-gnu" in prepared
+    assert "make distclean" in prepared
+    assert prepared.endswith(source)
+    assert "make check" in module.stable_reference(source, "48883")
+
+
+def test_opensc_ordinary_tests_remove_fuzzer_tool_objects():
+    original = "./configure\nmake check\n"
+    updated = module.stable_functional(original, "64898")
+    assert "make -C src/tools clean" in updated and "make distclean" in updated
+    assert updated.endswith(original)
+    assert module.stable_functional(updated, "64898") == updated

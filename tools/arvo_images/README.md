@@ -9,10 +9,16 @@ Use an original source task, with its Dockerfile and preparation scripts. The mi
 ```bash
 python tools/arvo_images/prepare.py --tasks ORIGINAL_TASKS --task ID \
   --output runs/images-ID --workers 1 --cpus 4 --memory-mb 8192 \
-  --owner icsawyer --publish
+  --owner icsawyer --package securevibebench --publish
 ```
 
-Online preparation acquires dependencies. Offline acceptance builds the reference and starting source, records the baseline, and tests native Harbor mini-swe-agent setup and separate verification. Publication checks private visibility and pulls the digest back to confirm the image ID. Credentials and original Git history must not remain in the image. Keep raw logs and acceptance evidence.
+Online preparation acquires dependencies. Offline acceptance builds the reference and starting source, records the baseline, and tests native Harbor mini-swe-agent setup and separate verification. Publication requires an existing Public package before any push. It verifies the published manifest anonymously and pulls the digest with an empty Docker authentication config to confirm the image ID. Credentials and original Git history must not remain in the image. Keep raw logs and acceptance evidence.
+
+Use `GITHUB_DOCKER` in the project `.env` for maintainer publication only. The temporary Docker authentication config is removed after each image. The shared package stays Public, and tags use `arvo-ID-offline-YYYYMMDD-IMAGEID`. The publisher refuses missing or private packages and refuses to replace a tag that points to a different image. It does not modify existing task tags.
+
+ARVO compilation retains the base image's declared working directory. Task functional tests still run in the task repository. This keeps relative dependency paths valid for nDPI and curl. Build scripts and before/after diagnostics are retained; failed online preparation emits internal logs before Docker removes its container.
+
+A compulsory post-freeze verifier compiles the submitted starting source, runs the PoC and full functional suite, and checks network isolation. The producer does not repeat the same compile/test probe before freezing.
 
 The producer uses native Harbor directly to verify an unpublished local image. It does not call the user evaluator or require a registry digest until publication. Failed reference baselines must be investigated; do not change assertions to obtain a successful image.
 
@@ -20,15 +26,15 @@ The producer uses native Harbor directly to verify an unpublished local image. I
 
 The runtime format contains `instruction.md`, `task.toml`, and `tests/test.sh`. The Dockerfile, installer scripts, and evidence remain in maintainer build inputs and run archives.
 
-For a verified ten-image distribution:
+For a completed Public image run:
 
 ```bash
-python tools/arvo_images/catalog.py --bundle RUN/distribution --output data
+python tools/arvo_images/catalog.py --run RUN --output data
 securevibebench pull --tasks data --task full
 securevibebench generate --tasks data --task ID --model 'openai/<model>' --local-images --eval
 ```
 
-The exporter records each registry digest, expected image ID, platform, baseline hash, and verified native agent. Publish those definitions and the image catalog to HF `full-habour`; do not put the complete dataset in GitHub. Update `evaluation/dataset-lock.json` after verifying the HF commit. The current HF release contains 21 image tasks. The wrapper only accepts declared image tasks and never falls back to a Dockerfile.
+The exporter records each registry digest, expected image ID, platform, baseline hash, and verified native agent. Publish those definitions and the image catalog to HF `full-habour`; do not put the complete dataset in GitHub. Update `evaluation/dataset-lock.json` after verifying the HF commit. The current HF release contains 41 image tasks. The wrapper only accepts declared image tasks and never falls back to a Dockerfile.
 
 Published offline bundles from earlier batches retain their own framework wheel and importer. Use those frozen bundles as complete archives. The current evaluator consumes the minimal image task format; export a new task root when using an earlier distribution with the current package.
 
@@ -46,6 +52,17 @@ python tools/publish_dataset.py --source TASK_FILES --catalog IMAGE_CATALOG_JSON
 
 The first command validates and stages task files, the image catalog, availability, and a deterministic archive. Review those artifacts before publishing. The second command updates exactly the reviewed branch head, removes obsolete task files, and writes `tools/image_build/publication-lock.json` plus the runtime HF release lock. The immutable source-data lock stays separate so image production can still obtain the original build inputs.
 
+## Consolidate accepted images
+
+Use one Public package, `ghcr.io/icsawyer/securevibebench`. Versions use `arvo-ID-offline-YYYYMMDD-IMAGEID`. Dataset task files pin the full manifest digest.
+
+```bash
+python tools/arvo_images/consolidate.py --inventory INVENTORY_JSON \
+  --output runs/registry-consolidation --crane /path/to/crane
+```
+
+Each inventory entry contains `task`, `reference` (the accepted source digest), and `image_id`. The target package must already be Public and linked to the benchmark repository. The copier preserves manifest digests, checks anonymous pulls, and writes `mapping.json`. Existing versions remain available. Apply verified mappings to task contracts before publishing the HF release. The publisher's default package is `securevibebench`.
+
 ## Repository association
 
 New prepared images carry `org.opencontainers.image.source=https://github.com/iCSawyer/SecureVibeBench`. GHCR uses this source label to associate the image package with the repository.
@@ -58,13 +75,12 @@ The auxiliary tag is `repository-link-20261107`. Its filesystem layers and runti
 
 ```bash
 pip install .
-docker login ghcr.io
 securevibebench pull --task full
 securevibebench generate --task 992 --model 'openai/<model>' --local-images --eval
 securevibebench eval ./submission --local-images
 ```
 
-Private packages require read access. `pull` downloads fixed image digests before trials. `--local-images` prevents registry access. Native agent setup, compilation, patch collection, and separate verification run without network. Only agent execution can access the configured model API allowlist. Current images declare mini-swe-agent; other agents require a new image and offline setup verification.
+Published evaluation images are Public; users do not need a package token or Docker login. `pull` downloads fixed image digests before trials. `--local-images` prevents registry access. Native agent setup, compilation, patch collection, and separate verification run without network. Only agent execution can access the configured model API allowlist. Current images declare mini-swe-agent; other agents require a new image and offline setup verification.
 
 ## FreeType repair for task 58663
 
@@ -78,7 +94,7 @@ For an already frozen image, `repair_freetype.py` installs the missing OS depend
 online, reuses the starting source and the native Mini installation, generates a
 new reference baseline in a disposable offline container with the original Git
 objects, then runs native offline setup and the complete offline submission
-verifier before privately republishing. Original Git objects are never copied
+verifier before republishing. Original Git objects are never copied
 into the corrected starting image. The previous image digest and batch artifacts
 remain archived. This avoids repeating checks already subsumed by the actual
 verifier while still testing the corrected environment.
