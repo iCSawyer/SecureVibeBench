@@ -42,3 +42,13 @@ __pypackages__/
 coverage.xml
 htmlcov/
 .ipynb_checkpoints/
+
+# Local toolchains copied into native Harbor build contexts.
+example/**/environment/toolchain/
+/data/
+example/**/environment/resolv.conf
+example/**/environment/docker-compose.yaml
+
+# Native Harbor run records and submitted patches.
+runs/
+submissions/

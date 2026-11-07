@@ -1,93 +1,181 @@
-# Usage Guide
+# Image-based native Harbor evaluation
 
-Requirements: Python 3.12+, Linux x86_64, Docker Engine with Compose, and a running Docker daemon. We recommend [uv](https://docs.astral.sh/uv/getting-started/installation/); pip also works. uv is not a host package dependency.
+This workflow is experimental on the `habour` branch. It uses prepared images for every trial. The installed catalog currently covers 21 tasks; this is a subset of the 105-task benchmark. `full` means all tasks in the selected image catalog. No HF or GitHub publication is performed by these commands.
 
-## Install
+## 1. Environment installation
 
-```bash
-# Run in an isolated environment managed by uv
-uvx securevibebench --help
-
-# Or install into an active virtual environment
-uv pip install securevibebench
-
-# Or use pip
-pip install securevibebench
-```
-
-Create a virtual environment first if needed: `uv venv` or `python -m venv .venv`, then `source .venv/bin/activate`.
-
-Installation downloads the pinned 105-task dataset and original evaluator from Hugging Face. mini-swe-agent is installed inside task containers when evaluation starts; it is not installed on the host. Docker images and container tools are prepared automatically.
-
-## Source installation and development
-
-From a source checkout:
+Requirements: Linux x86-64, Python 3.12+, Docker Engine with Compose, and permission to use Docker.
 
 ```bash
-python tools/install.py
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install .
+docker info
+docker compose version
+securevibebench --help
 ```
 
-The installer uses uv when available, otherwise the current Python's pip. Use `--installer pip` to choose pip explicitly.
+uv is optional. Use `uv sync --locked` and `source .venv/bin/activate` instead of the venv and pip commands.
 
-For editable source and development tools:
+### Task availability
+
+`securevibebench list` shows the complete 105-task inventory: 21 tasks have prepared image digests and 84 are temporarily unsupported. Use `--json` for structured status. `--task full` selects only supported tasks. Selecting an unsupported task fails before any pull or trial. HF `full-habour` contains only runnable tasks under `data/`; `availability.json` records all task statuses.
+
+### Download images before a run
+
+The GHCR packages are private. Your GitHub account needs package access. Use a personal access token with `read:packages` when Docker asks for a password. Do not put the token in task files or command arguments.
 
 ```bash
-uv sync
-# Or with pip, in an active virtual environment
-python tools/install.py --dev --installer pip
+docker login ghcr.io
+securevibebench pull --task 992
+securevibebench pull --task 992 32345
+securevibebench pull --task full
 ```
 
-The uv path creates `.venv`; activate it with `source .venv/bin/activate`. The pip path installs into the current environment.
+`pull` retrieves immutable registry digests and verifies each Docker image ID and platform. Its output directory contains pull logs and `images.json`. The package also includes a checksum-verified archive of Harbor's network policy image. It loads that image locally. This prevents Harbor from building its firewall image during a trial.
 
-## Evaluate
+`generate` and `eval` perform the same image check before starting any trial. They pull missing images by default. Add `--local-images` to prohibit registry access and fail early if an image is missing. Images imported with `docker load` are accepted when their exact image IDs match the task contract.
+
+No evaluation command installs OS packages, clones task repositories, or builds a task image. Image production is a separate maintainer workflow in [tools/arvo_images/README.md](../tools/arvo_images/README.md).
+
+### Task and image contract
+
+The package contains task definitions under `evaluation/tasks/` and provenance in `evaluation/image-catalog.json`. `example/` contains one task. Use `--tasks PATH` for another native image task root. A task contains:
+
+```text
+securevibebench-ID/
+  instruction.md
+  task.toml
+  tests/test.sh
+```
+
+`task.toml` declares an immutable registry digest, its expected Docker config ID, platform, and agents whose offline setup was verified. The image contains the starting source snapshot, compiler dependencies, test runtime, and reference baseline. Original repository history is removed during image production. A new one-commit repository supplies `svb-start` for patch collection and replay.
+
+A task cannot provide a Dockerfile as a fallback. Trial definitions are copied to the run directory, where the registry reference is replaced with the verified local image ID. Host DNS and CPU placement are configured in this copy. The packaged task definitions remain unchanged. All tasks are checked before a generation job starts.
+
+### Network phases
+
+| Phase | Network |
+| --- | --- |
+| Maintainer image production | Online preparation, then offline acceptance tests |
+| Image acquisition before trials | Registry access; prohibited by `--local-images` |
+| Agent setup | No network; native Harbor adapter uses the prepared image and cache |
+| Agent execution | Model and authentication API hosts in the task allowlist |
+| Patch collection | No network |
+| Submission replay, compilation, functional tests, PoC | No network in separate fresh verifier containers |
+
+The default API hosts are `api.openai.com`, `api.anthropic.com`, `chatgpt.com`, and `auth.openai.com`. Use repeated `--allow-model-host HOST` for another model endpoint. Use exact hostnames, without URLs, ports, paths, or wildcards. These changes apply only to that run's agent phase. They do not open setup or verification.
+
+The model API exception applies to generation only. `eval` is fully offline after image acquisition. `--local-images` covers the wrapper's registry behavior; host-level isolation is still required if you need to prohibit unrelated host traffic. Harbor's native Docker network policy enforces the container phases.
+
+## 2. Generate with native Harbor
+
+### One task
 
 ```bash
 export OPENAI_API_KEY='<your-api-key>'
-securevibebench eval --model 'openai/<model-name>' --task 992
+securevibebench generate --agent mini-swe-agent --model 'openai/<model>' \
+  --task 992 --local-images --output submissions/mini-992 --eval
 ```
 
-Omit `--task 992` to run all tasks, or repeat `--task` to select several. Without a persistent install, use `uvx securevibebench eval ...`. Other providers use their own prefix and credential variable, such as `anthropic/<model-name>` and `ANTHROPIC_API_KEY`.
+`generate` invokes native `harbor run`, disables verification during generation, and packages its collected source patch. `--eval` then evaluates only this run's submission in fresh containers. Failure during generation skips scoring. A valid zero reward is a benchmark outcome, not an infrastructure error.
 
-For an OpenAI-compatible endpoint:
+The output contains `images/images.json`, staged `tasks/`, `command.json`, `harbor.log`, native trajectories under `jobs/generation/`, `submission/`, and `summary.json`. With `--eval`, results are in `evaluation/eval.json`. A missing `--output` creates a new directory under `submissions/`. Logs and trajectories are retained; artifact redaction removes credential values.
+
+### One, multiple, or all tasks
 
 ```bash
-export MODEL_API_KEY='<your-endpoint-api-key>'
-securevibebench eval --model 'openai/<model-name>' --task 992 \
-  --base-url 'http://<model-server>:8000/v1' \
-  --api-key-name MODEL_API_KEY \
-  --api-format openai_chat_completions
+securevibebench generate --model 'openai/<model>' --task 992 --local-images
+securevibebench generate --model 'openai/<model>' --task 992 32345 --jobs 2 --local-images
+securevibebench generate --model 'openai/<model>' --task 992,32345 --jobs 2 --local-images
+securevibebench generate --model 'openai/<model>' --task full --jobs 2 --local-images --eval
 ```
 
-The endpoint must be reachable from task containers. Set the key to `unused` if authentication is disabled. SAST is disabled by default. To enable it, pass `--run-sast TRUE` and provide Semgrep configuration and credentials such as `SEMGREP_APP_TOKEN`. See `securevibebench eval --help` for options.
+`--task full`, or omission of `--task`, selects all tasks under `--tasks`. The default root is the installed 21-task catalog. `--tasks example --task full` selects the single example. Unknown IDs fail before any trial. `--jobs` controls native Harbor concurrency. CPU and memory budgets remain in each task definition.
 
-## Agent installation cache
+### Agent and model configuration
 
-Each task container needs uv, a managed Python, and mini-swe-agent. The first task downloads and installs them, then saves the result to `.cache/securevibebench/agent-toolchain/` in the current working directory; later tasks restore that archive instead of downloading again (about 25 seconds instead of several minutes). Archives are keyed by the container's `$HOME`, CPU architecture, and C library, so images that cannot share one get their own. If a restore fails, the task installs from scratch. Delete the directory to force a fresh install.
+`--agent` accepts native Harbor agent names. An image must declare that agent in `metadata.image.agents`. All current images declare mini-swe-agent only. The CLI rejects other agents before trials instead of trying a network installation. To support Codex or Claude Code, prepare and verify their native setup in a new image, then update the task's digest, ID, and agent declaration. The CLI does not copy host binaries into task containers.
 
-## Interrupt and resume
+Harbor manages mini's installer, configuration, prompts, and execution. The frozen image and the pinned Harbor version preserve its prepared installation. This project does not maintain a separate mini installer. A native adapter that needs uncached dependencies fails offline and retains its logs.
 
-Progress is printed as one line per task phase. Ctrl-C, `SIGTERM`, or `SIGHUP` stops the run, removes its task and evaluator containers, and keeps finished tasks in `summary.json` (`"status": "interrupted"`). Continue later with the saved settings; finished tasks are not rerun:
+For another API gateway:
 
 ```bash
-securevibebench eval --resume runs/<job>
+export MODEL_API_KEY='<your-api-key>'
+securevibebench generate --model 'openai/<model>' --task 992 --local-images \
+  --allow-model-host model.example.org --base-url https://model.example.org/v1 \
+  --api-key-name MODEL_API_KEY --api-format openai_chat_completions
 ```
 
-Resuming also removes containers left by a run that was killed outright (for example with `SIGKILL`).
-
-## Results
-
-Results are written to `runs/<job>/summary.json` under the current working directory, alongside trajectories, patches, and original reports. The summary is updated after every finished task. Functional and PoV security scores remain independent and retain the original scoring rules.
-
-Since v0.2.1 the functional-test parser reads parallel `ctest -j` output per test. The Wireshark tasks interleave output from concurrent tests, and the original parser could pair a test with another test's status, misreporting passes and failures. Functional results for those tasks can therefore differ from v0.2.0 and v0.1; other tasks are unaffected. Locally cached baselines are rebuilt automatically.
-
-Runtime caches live next to `runs/` in the current working directory: resources and functional-test baselines in `.cache/securevibebench/resources/`, and the agent toolchain in `.cache/securevibebench/agent-toolchain/`. The dataset downloaded during installation is cached in `~/.cache/securevibebench/huggingface/` (respects `XDG_CACHE_HOME`). The package's `resources.json` records upstream commits and checksums. No `dev/` directory is required.
-
-## Developer checks
+Forward native agent options with repeated `--ak KEY=VALUE`. `--agent-env NAME` forwards a set host variable by reference. Never put credential values in agent options. For mini's native OpenRouter backend:
 
 ```bash
-uv run python -m unittest discover -s tests -v
-uv build --sdist
-uv run twine check dist/*.tar.gz
+export OPENROUTER_API_KEY='<your-api-key>'
+securevibebench generate --agent mini-swe-agent \
+  --model 'openrouter/<provider>/<model>' --task 992 --local-images \
+  --allow-model-host openrouter.ai --agent-env OPENROUTER_API_KEY \
+  --ak 'config={"model":{"model_class":"openrouter","model_kwargs":{"model":"<provider>/<model>"}}}' \
+  --ak 'session_id_headers=[]' --eval
 ```
 
-With pip, use `python -m unittest discover -s tests -v`, `python -m build --sdist`, and `python -m twine check dist/*.tar.gz` instead. Pushing a `v<version>` tag publishes the source archive to PyPI through `.github/workflows/package.yml`. Development dependencies are installed by `tools/install.py --dev`. To refresh release resources, run `python tools/bundle_resources.py` (requires Git).
+The backend model ID excludes the routing prefix `openrouter/`. Model availability and billing are controlled by your provider.
+
+### Direct Harbor use
+
+The staged tasks in a generation run use local image IDs and include host DNS configuration. You can use them with native Harbor, preserving their phase policies and collection hook:
+
+```bash
+harbor run -p submissions/mini-992/tasks -a mini-swe-agent -m 'openai/<model>' \
+  --disable-verification --jobs-dir runs/native --job-name my-run
+securevibebench eval runs/native/my-run --local-images
+```
+
+Keep the task image and Harbor network image available. Do not enable force-build or override network policies. Direct Harbor job patches must meet the collection requirements below.
+
+## 3. Evaluate generated or external submissions
+
+### Use generated submissions or native jobs
+
+```bash
+securevibebench eval submissions/mini-992 --local-images
+securevibebench eval runs/native/my-run --local-images
+securevibebench eval --local-images
+```
+
+With no path, `eval` checks `submissions/`. It accepts a patch submission there, or one unambiguous child. If there are multiple candidates, specify one. It does not choose the newest run.
+
+A native job needs one completed trial per task and `artifacts/logs/artifacts/agent.patch` from the collection hook. Infrastructure errors and detected Codex tool startup errors prevent packaging. Duplicate attempts are rejected. Generation rewards are not required. The original job remains unchanged.
+
+An optional explicit export is available:
+
+```bash
+securevibebench package --job runs/native/my-run --output submissions/portable
+securevibebench eval submissions/portable --local-images
+```
+
+### Build an external submission
+
+Use this layout:
+
+```text
+my-submission/
+  securevibebench-992/submission.patch
+  securevibebench-32345/submission.patch
+```
+
+Each patch is a regular file, at most 32 MiB. Paths in the patch are relative to the task repository. Make the patch against the image's `svb-start` source snapshot:
+
+```bash
+git diff --binary svb-start -- . > submission.patch
+```
+
+Include new source files with `git add -N` before creating the diff. Do not include task configuration, build dependencies, tests, credentials, or model output outside the source patch. Empty patches are allowed. Submit only the tasks you want to score; each must have a prepared image definition in the selected task root.
+
+```bash
+securevibebench eval my-submission --jobs 2 --local-images --output runs/my-score
+```
+
+The wrapper runs native Harbor's oracle adapter to apply each submitted patch, then the separate verifier recompiles and runs functional and security checks without network. It does not use a model API. Image checks, patch hashes, Harbor command, raw logs, trajectories, verifier exit codes, and `eval.json` remain in the result directory.
+
+Functional and security rewards are separate. Scoring preserves the reference pass-set policy embedded in each fixed image. Some historical reference tests fail or are skipped; inspect `image-catalog.json` and image-production evidence. A successful empty-patch environment check is not evidence that an agent solved the task.

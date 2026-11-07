@@ -1,12 +1,16 @@
-# Bundled resources
+# Third-party components
 
-SecureVibeBench installs the original dataset and evaluator from
-[iCSawyer/SecureVibeBench](https://huggingface.co/datasets/iCSawyer/SecureVibeBench)
-and bundles the source of [mini-swe-agent](https://github.com/SWE-agent/mini-swe-agent),
-both licensed under the MIT license. Source distributions include the agent's
-license in `mini-source.tar.gz`. Installed resources include both license texts
-as `dataset/LICENSE` and `mini-swe-agent/LICENSE.md`.
+SecureVibeBench's task dataset is published under the MIT license at
+[iCSawyer/SecureVibeBench](https://huggingface.co/datasets/iCSawyer/SecureVibeBench).
+`evaluation/dataset-lock.json` pins the native Harbor dataset revision and manifest hash.
+The dataset retains the task instructions. The installed evaluation package contains
+the original parser and scoring functions shared by the tasks.
 
-The installed `resources.json` records the exact upstream commits and file
-checksums. Dataset instructions, tests, and scoring code are preserved verbatim;
-the host verifier is stored in `dataset/evaluator/` for packaging.
+Harbor is an installed Python dependency. The default agent is Harbor's built-in
+[mini-swe-agent](https://github.com/SWE-agent/mini-swe-agent), licensed under MIT.
+Harbor installs its package and dependencies during native agent setup, with their
+package license metadata. This distribution does not bundle mini-swe-agent source or
+the former host-side evaluator.
+
+Optional Codex and Claude Code binaries are supplied by the user and remain subject
+to their respective licenses and service terms. Credentials are not distributed.

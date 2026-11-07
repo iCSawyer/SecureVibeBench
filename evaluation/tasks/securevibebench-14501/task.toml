@@ -1,0 +1,63 @@
+schema_version = "1.4"
+
+[task]
+name = "securevibebench/securevibebench-14501"
+version = "2.0.0"
+keywords = [
+    "c",
+    "cpp",
+    "security",
+    "securevibebench",
+]
+
+[metadata]
+localid = "14501"
+repo_url = "https://github.com/lpereira/lwan.git"
+vic = "3402997c93f794903a27d35c4624ca489f52f8ac"
+base_commit = "3402997c93f794903a27d35c4624ca489f52f8ac^"
+repo_cwd = "/src/lwan"
+functional_script_id = 14501
+source_dataset = "iCSawyer/SecureVibeBench"
+reward_policy = "original-evaluator-separate-metrics"
+hf_revision = "5fa48dd35fe29565adaa020dd2d333b650f3e621"
+
+[metadata.image]
+reference = "ghcr.io/icsawyer/securevibebench-arvo-14501@sha256:07703f543518da15a493119f4fe43c540837840632a88b2d0de04ea6527a40bb"
+id = "sha256:f5dcf4773ceda073e0778a62e82630e0296f7d5543d902e8df60bad4edcefa54"
+platform = "linux/amd64"
+agents = [
+    "mini-swe-agent",
+]
+mini_version = "2.4.6"
+baseline_sha256 = "971bf8a19e8204a2aa457dc3d8875ddcf3331aa5a114cead2ef70d7520f683cb"
+
+[agent]
+timeout_sec = 3600.0
+network_mode = "allowlist"
+allowed_hosts = [
+    "api.openai.com",
+    "api.anthropic.com",
+    "chatgpt.com",
+    "auth.openai.com",
+]
+
+[verifier]
+timeout_sec = 7200.0
+environment_mode = "separate"
+network_mode = "no-network"
+collect = [
+    { command = "/opt/svb/python/bin/python3 /opt/svb/runtime.py collect", timeout_sec = 120 },
+]
+
+[verifier.environment]
+network_mode = "no-network"
+cpus = 4
+memory_mb = 8192
+
+[environment]
+build_timeout_sec = 1800.0
+cpus = 4
+memory_mb = 8192
+storage_mb = 20480
+network_mode = "no-network"
+docker_image = "ghcr.io/icsawyer/securevibebench-arvo-14501@sha256:07703f543518da15a493119f4fe43c540837840632a88b2d0de04ea6527a40bb"

@@ -1,5 +1,7 @@
 # SecureVibeBench
 
+> **`habour` branch:** Use **native Harbor + your model** to generate submissions; `securevibebench eval` scores them. See [docs/README.md](docs/README.md) for fixed images, API-only agent execution, and offline submission scoring.
+
 <p align="left">
     <!-- <img src="https://img.shields.io/badge/Version-v0.2-blue.svg?style=for-the-badge" alt="Version: v0.2"> -->
     <a href="https://2026.aclweb.org/"><img src="https://img.shields.io/badge/Venue-ACL%202026-2ea44f.svg?style=for-the-badge" alt="Venue: ACL 2026"></a>
@@ -13,11 +15,8 @@
 
 
 
-> [!IMPORTANT]
-> **SecureVibeBench is now v0.2!** Just try `pip install -U securevibebench`!
->
-> We are updating the evaluation criteria and workflow currently, so **the results obtained may differ from v0.1**.
-> Please report any usage issues you encouter via Issues or my [email](mailto:junkaichen@smu.edu.sg), and we will investigate and fix as soon as possible. 🙏
+> [!NOTE]
+> The `habour` branch is experimental. Its prepared image catalog currently covers 21 tasks. Other benchmark tasks need prepared images before they can use this workflow. Use this checkout; this work has not been formally released.
 
 <p align="left">
     ✨&nbsp;<a href="#nav-news">News</a>
@@ -42,46 +41,37 @@
 
 ## 🛠️ Quick Start
 
-Requirements: Python 3.12+, Linux, and Docker.
+Requirements: Linux x86-64, Python 3.12+, and Docker with Compose. Use this experimental `habour` checkout.
 
-### Install
-
-We recommend [uv](https://docs.astral.sh/uv/getting-started/installation/) for managing Python environments.
+### 1. Environment installation
 
 ```bash
-uv pip install -U securevibebench
-```
-```bash
-# Or with pip
-pip install -U securevibebench
-```
-
-Task containers will be prepared when the real evaluation starts.
-
-### For development
-
-```bash
-git clone https://github.com/iCSawyer/SecureVibeBench.git
-cd SecureVibeBench
-uv sync  # editable install + development tools
+pip install .
+docker login ghcr.io
+securevibebench list
+securevibebench pull --task 992
 ```
 
-### Run evaluation
+The image packages are private. Your GitHub account needs package access and a token with `read:packages`. The installed catalog contains 21 prepared image tasks. `pull --task full` downloads all catalog images. uv is optional: use `uv sync --locked` instead of `pip install .`.
+
+### 2. Generate a submission with mini-swe-agent
 
 ```bash
 export OPENAI_API_KEY='<your-api-key>'
-export MODEL='openai/<model-name>'
-
-securevibebench eval --model "$MODEL" --task 992
-# securevibebench eval --model "$MODEL" # all 105 tasks
+securevibebench generate --agent mini-swe-agent --model 'openai/<model>' \
+  --task 992 --local-images --output submissions/mini-992 --eval
 ```
 
-Results are saved to `runs/<job>/summary.json` under the current working directory.
+Harbor runs its native mini-swe-agent adapter. The fixed image supplies the source, build dependencies, verifier, and cached native agent installation. Setup and compilation have no network; only agent execution can reach the model API allowlist. `--eval` scores the resulting submission in fresh offline containers. Patches, Harbor trajectories, and scores remain in the output directory.
 
-We disable static vulnerability analysis by default. Enable it with `--run-sast TRUE` and configure Semgrep credentials such as `SEMGREP_APP_TOKEN`. 
+### 3. Evaluate a submission
 
-> [!NOTE]
-> For custom endpoints, development setup, and more details, see the [Usage Guide](https://github.com/iCSawyer/SecureVibeBench/blob/main/docs/README.md). Run `securevibebench eval --help` for evaluation options.
+```bash
+securevibebench eval submissions/mini-992 --local-images
+securevibebench eval /path/to/external-submission --local-images
+```
+
+Scoring needs no model API key. Without `--local-images`, missing fixed images are pulled before trials start. No evaluation command builds an image or downloads task dependencies. See [the usage guide](docs/README.md) for task selection, other agents, and submission requirements.
 
 
 <a id="nav-overview"></a>

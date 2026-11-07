@@ -1,0 +1,27 @@
+#!/opt/svb/python/bin/python3
+"""Bound explicit make job counts, including CPython's nested freeze test."""
+import json
+import os
+from pathlib import Path
+import re
+import sys
+
+limit = max(1, int(os.environ.get('SVB_TEST_JOBS', '8')))
+arguments, requested = [], []
+raw = iter(sys.argv[1:])
+for argument in raw:
+    if argument in ('-j', '--jobs'):
+        following = next(raw, None)
+        if following and following.isdigit():
+            requested.append(following)
+        elif following:
+            arguments.append(following)
+    elif re.fullmatch(r'-j\d*|--jobs=\d*', argument):
+        requested.append(argument)
+    else:
+        arguments.append(argument)
+logs = os.environ.get('SVB_LOG_DIR')
+if logs:
+    with (Path(logs) / 'make-jobs.jsonl').open('a') as stream:
+        stream.write(json.dumps({'requested': requested, 'effective': limit}) + '\n')
+os.execv('/usr/bin/make', ['/usr/bin/make', '-j' + str(limit), *arguments])

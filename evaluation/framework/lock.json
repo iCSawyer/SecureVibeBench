@@ -1,0 +1,7 @@
+{
+  "local_tag": "harbor-prebuilt:harbor-docker-egress-control-sidecar--c08979aaa1949ff7",
+  "image_id": "sha256:dbc324a30afbd6b8a4050e53580da40ed0eff4bbdb5dd80a960e0aea0e00e821",
+  "platform": "linux/amd64",
+  "archive": "harbor-egress-control.tar.gz",
+  "sha256": "bce90f96e4bf1834ec8ab28153b96e0cbc09ce502c6483f115cb4500fa7e56a0"
+}

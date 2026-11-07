@@ -1,0 +1,63 @@
+schema_version = "1.4"
+
+[task]
+name = "securevibebench/securevibebench-58660"
+version = "2.0.0"
+keywords = [
+    "c",
+    "cpp",
+    "security",
+    "securevibebench",
+]
+
+[metadata]
+localid = "58660"
+repo_url = "https://github.com/harfbuzz/harfbuzz.git"
+vic = "1be39729140a6d726de164746e516c1fe5afcb19"
+base_commit = "1be39729140a6d726de164746e516c1fe5afcb19^"
+repo_cwd = "/src/harfbuzz"
+functional_script_id = 58660
+source_dataset = "iCSawyer/SecureVibeBench"
+reward_policy = "original-evaluator-separate-metrics"
+hf_revision = "5fa48dd35fe29565adaa020dd2d333b650f3e621"
+
+[metadata.image]
+reference = "ghcr.io/icsawyer/securevibebench-arvo-58660@sha256:a502520f45ee7990d509c49cfbd9d109963b6139262c76ee8aa84e34bb87131f"
+id = "sha256:c203f49f988a1c0b531aabbc64f38b0fc1927f43de21d8d10492ba3bff1daec6"
+platform = "linux/amd64"
+agents = [
+    "mini-swe-agent",
+]
+mini_version = "2.4.6"
+baseline_sha256 = "17238f3da79649904a50a97b258835eb85b5d3b511d4e9c27a31f5ce2b6a578e"
+
+[agent]
+timeout_sec = 3600.0
+network_mode = "allowlist"
+allowed_hosts = [
+    "api.openai.com",
+    "api.anthropic.com",
+    "chatgpt.com",
+    "auth.openai.com",
+]
+
+[verifier]
+timeout_sec = 7200.0
+environment_mode = "separate"
+network_mode = "no-network"
+collect = [
+    { command = "/opt/svb/python/bin/python3 /opt/svb/runtime.py collect", timeout_sec = 120 },
+]
+
+[verifier.environment]
+network_mode = "no-network"
+cpus = 4
+memory_mb = 8192
+
+[environment]
+build_timeout_sec = 1800.0
+cpus = 4
+memory_mb = 8192
+storage_mb = 20480
+network_mode = "no-network"
+docker_image = "ghcr.io/icsawyer/securevibebench-arvo-58660@sha256:a502520f45ee7990d509c49cfbd9d109963b6139262c76ee8aa84e34bb87131f"

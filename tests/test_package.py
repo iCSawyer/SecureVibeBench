@@ -1,280 +1,112 @@
-"""Run against an installed distribution: python -m unittest discover -s tests -v."""
-
-import contextlib
-import io
+"""Public CLI delegates generation to Harbor and supports generation and independent scoring."""
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
-import tempfile
-import unittest
-from unittest import mock
-
-os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")
-
-from securevibebench_evaluation import cli, resources, run
+import pytest
+from securevibebench_evaluation import cli, images, submissions
 
 
-class InstalledPackageTests(unittest.TestCase):
-    def setUp(self):
-        self.temporary = tempfile.TemporaryDirectory(prefix="svb-package-test-")
-        self.addCleanup(self.temporary.cleanup)
-        self.directory = Path(self.temporary.name)
-
-    def arguments(self, *extra):
-        return cli.build_parser().parse_args([
-            "eval", "--model", "openai/test-model", "--cache-dir", str(self.directory / "cache"), *extra,
-        ])
-
-    def test_help_runs_outside_the_repository_without_creating_a_cache(self):
-        cache = self.directory / ".cache"
-        result = subprocess.run(
-            [sys.executable, "-m", "securevibebench_evaluation", "--help"],
-            cwd=self.directory, env={**os.environ, "XDG_CACHE_HOME": str(cache)},
-            capture_output=True, text=True, check=True,
-        )
-        self.assertIn("eval", result.stdout)
-        self.assertNotIn("--model", result.stdout)
-        evaluation = subprocess.run(
-            [sys.executable, "-m", "securevibebench_evaluation", "eval", "--help"],
-            cwd=self.directory, env={**os.environ, "XDG_CACHE_HOME": str(cache)},
-            capture_output=True, text=True, check=True,
-        )
-        self.assertIn("securevibebench eval", evaluation.stdout)
-        self.assertIn("--model", evaluation.stdout)
-        self.assertIn("--task", evaluation.stdout)
-        self.assertNotIn("--hf-revision", evaluation.stdout)
-        self.assertFalse(cache.exists())
-
-    def test_defaults_keep_caches_and_runs_in_the_current_working_directory(self):
-        with mock.patch.object(Path, "cwd", return_value=self.directory):
-            args = cli.build_parser().parse_args(["eval", "--model", "openai/test-model"])
-            self.assertEqual(run.project_cache_dir(), self.directory / ".cache/securevibebench")
-        self.assertEqual(args.cache_dir, self.directory / ".cache/securevibebench/resources")
-        self.assertEqual(args.jobs_dir, self.directory / "runs")
-
-    def test_runtime_entrypoint_imports(self):
-        from harbor.job import Job
-        from securevibebench_evaluation.editable_mini import EditableMiniSweAgent
-
-        self.assertTrue(callable(Job.create))
-        self.assertTrue(callable(EditableMiniSweAgent.install))
-
-    def test_all_tasks_and_agent_source_materialize_without_network_or_git(self):
-        args = self.arguments()
-        with mock.patch("socket.getaddrinfo", side_effect=AssertionError("unexpected network")), \
-                mock.patch("subprocess.Popen", side_effect=AssertionError("unexpected subprocess")):
-            dataset = run.prepare_dataset(args)
-            again = run.prepare_dataset(args)
-        self.assertEqual(dataset, again)
-        self.assertEqual(len(list((dataset / "data").glob("*/task.toml"))), 105)
-        self.assertTrue((dataset / "evaluator/harbor_verifier.py").is_file())
-        self.assertTrue((dataset.parent / "mini-swe-agent/src/minisweagent/__init__.py").is_file())
-        self.assertFalse((dataset / "dev").exists())
-        self.assertEqual(args.resolved_hf_commit, resources.manifest()["hf_commit"])
-
-    def test_corrupt_cached_task_is_rejected(self):
-        args = self.arguments()
-        dataset = run.prepare_dataset(args)
-        instruction = dataset / "data/securevibebench-992/instruction.md"
-        instruction.write_text(instruction.read_text() + "\nchanged\n")
-        with self.assertRaisesRegex(ValueError, "checksum mismatch"):
-            run.prepare_dataset(args)
-
-    def test_single_task_custom_endpoint_and_original_verifier(self):
-        from harbor.agents.factory import AgentFactory
-        from harbor.agents.installed.mini_swe_agent import MiniSweAgent
-        from harbor.models.job.config import JobConfig
-        from securevibebench_evaluation.hf_verifier import load_verifier
-
-        args = self.arguments("--task", "992", "--task", "securevibebench-992",
-                              "--base-url", "http://model-server:8000/v1",
-                              "--api-key-name", "MODEL_API_KEY", "--api-format", "openai_chat_completions")
-        dataset = run.prepare_dataset(args)
-        with mock.patch("socket.getaddrinfo", side_effect=AssertionError("unexpected network")):
-            config = JobConfig.model_validate(run.build_config(args, bundle=dataset))
-            agent_class = AgentFactory.get_agent_class_from_config(config.agents[0])
-            verifier = load_verifier(dataset, config.verifier.kwargs["verifier_sha256"])
-        self.assertEqual(len(config.tasks), 1)
-        self.assertEqual(config.tasks[0].path, dataset / "data/securevibebench-992")
-        self.assertEqual(config.datasets, [])
-        self.assertEqual(config.agents[0].base_url, args.base_url)
-        self.assertEqual(config.agents[0].model_api_key_name, "MODEL_API_KEY")
-        self.assertTrue(issubclass(agent_class, MiniSweAgent))
-        self.assertIs(agent_class.run, MiniSweAgent.run)
-        self.assertEqual(config.agents[0].kwargs["version"], "2.4.6")
-        self.assertEqual(Path(config.agents[0].kwargs["toolchain_cache_dir"]),
-                         run.project_cache_dir().resolve() / "agent-toolchain")
-        self.assertEqual(verifier.ROOT, dataset)
-        self.assertEqual(Path(config.verifier.kwargs["baseline_dir"]), dataset.parent / "baselines")
-        self.assertEqual(config.verifier.kwargs["run_sast"], "FALSE")
-
-    def test_sast_is_disabled_by_default_and_can_be_enabled_explicitly(self):
-        args = self.arguments("--task", "992")
-        dataset = run.prepare_dataset(args)
-        default = run.build_config(args, bundle=dataset)
-        self.assertEqual(default["verifier"]["kwargs"]["run_sast"], "FALSE")
-        enabled = self.arguments("--task", "992", "--run-sast", "TRUE")
-        run.prepare_dataset(enabled)
-        config = run.build_config(enabled, bundle=dataset)
-        self.assertEqual(config["verifier"]["kwargs"]["run_sast"], "TRUE")
-
-    def test_all_tasks_default_and_invalid_task(self):
-        args = self.arguments()
-        dataset = run.prepare_dataset(args)
-        config = run.build_config(args, bundle=dataset)
-        self.assertEqual(config["datasets"][0]["path"], str(dataset / "data"))
-        for task in ("999999", "../992"):
-            args.task = [task]
-            with self.subTest(task=task), self.assertRaises(ValueError):
-                run.build_config(args, bundle=dataset)
-
-    def test_config_preview_does_not_start_docker_or_call_a_model(self):
-        output = io.StringIO()
-        with contextlib.redirect_stdout(output), \
-                mock.patch.object(run, "execute", side_effect=AssertionError("unexpected evaluation")):
-            result = cli.main(["eval", "--model", "openai/test-model", "--task", "992",
-                               "--cache-dir", str(self.directory / "cache"), "--print-config"])
-        self.assertEqual(result, 0)
-        self.assertEqual(len(json.loads(output.getvalue())["tasks"]), 1)
-
-    def test_installed_console_entry_point_evaluates_the_selected_task(self):
-        command = Path(sys.executable).parent / "securevibebench"
-        result = subprocess.run(
-            [str(command), "eval", "--model", "openai/test-model", "--task", "992",
-             "--cache-dir", str(self.directory / "cache"), "--print-config"],
-            cwd=self.directory, env=os.environ.copy(),
-            capture_output=True, text=True, check=True,
-        )
-        config = json.loads(result.stdout)
-        self.assertEqual(config["agents"][0]["model_name"], "openai/test-model")
-        self.assertTrue(config["tasks"][0]["path"].endswith("securevibebench-992"))
-
-    def test_cli_requires_a_model_and_rejects_unknown_commands(self):
-        for arguments in (["eval"], ["unknown"], ["--model", "openai/test-model"]):
-            with self.subTest(arguments=arguments), contextlib.redirect_stderr(io.StringIO()):
-                with self.assertRaises(SystemExit) as error:
-                    cli.main(arguments)
-                self.assertEqual(error.exception.code, 2)
-
-    def test_version_flag_reports_the_installed_distribution(self):
-        from importlib.metadata import version
-
-        output = io.StringIO()
-        with contextlib.redirect_stdout(output), self.assertRaises(SystemExit) as error:
-            cli.main(["--version"])
-        self.assertEqual(error.exception.code, 0)
-        self.assertEqual(output.getvalue().strip(), f"securevibebench {version('securevibebench')}")
-
-    def saved_job(self):
-        from harbor.models.job.config import JobConfig
-
-        args = self.arguments("--task", "992")
-        config = JobConfig.model_validate(run.build_config(args, bundle=run.prepare_dataset(args)))
-        job = self.directory / "runs" / "job"
-        job.mkdir(parents=True)
-        (job / "config.json").write_text(config.model_dump_json(exclude_defaults=True))
-        return job
-
-    def test_resume_reuses_the_saved_job_config(self):
-        job = self.saved_job()
-        output = io.StringIO()
-        with contextlib.redirect_stdout(output), \
-                mock.patch.object(run, "execute", side_effect=AssertionError("unexpected evaluation")):
-            result = cli.main(["eval", "--resume", str(job), "--print-config"])
-        self.assertEqual(result, 0)
-        config = json.loads(output.getvalue())
-        self.assertEqual((config["job_name"], Path(config["jobs_dir"])), ("job", job.parent))
-        self.assertTrue(config["tasks"][0]["path"].endswith("securevibebench-992"))
-        with contextlib.redirect_stderr(io.StringIO()):
-            self.assertEqual(cli.main(["eval", "--resume", str(job), "--model", "openai/x"]), 2)
-            self.assertEqual(cli.main(["eval", "--resume", str(self.directory)]), 2)
-
-    def test_interrupted_trials_and_their_containers_are_selected_precisely(self):
-        job = self.directory / "job"
-        for name, result in (("done", {}), ("cancelled", {"exception_info": {"exception_type": "CancelledError"}}),
-                             ("failed", {"exception_info": {"exception_type": "RuntimeError"}}), ("killed", None)):
-            (job / name).mkdir(parents=True)
-            if result is not None:
-                (job / name / "result.json").write_text(json.dumps(result))
-        trials = run.unfinished_trials(job)
-        self.assertEqual([trial.name for trial in trials], ["cancelled", "killed"])
-
-        client = mock.Mock()
-        client.containers.return_value = [
-            {"Id": "env", "Image": "killed__env_main", "Mounts": [],
-             "Labels": {"com.docker.compose.project": "killed__env"}},
-            {"Id": "evaluator", "Image": "n132/arvo:992-vul", "Labels": {},
-             "Mounts": [{"Source": str(job / "cancelled/verifier/original/out")}]},
-            {"Id": "finished", "Image": "n132/arvo:992-vul", "Labels": {},
-             "Mounts": [{"Source": str(job / "done/verifier")}]},
-            {"Id": "someone-else", "Image": "n132/arvo:992-vul", "Labels": {}, "Mounts": []},
-        ]
-        client.networks.return_value = []
-        with mock.patch("docker.from_env", return_value=mock.Mock(api=client)):
-            self.assertEqual(run.remove_trial_containers(trials), 2)
-        removed = [call.args[0] for call in client.remove_container.call_args_list]
-        self.assertEqual(removed, ["env", "evaluator"])
-        client.remove_image.assert_called_once_with("killed__env_main")
-
-    def test_agent_toolchain_is_cached_once_and_restored(self):
-        import asyncio
-        from securevibebench_evaluation.editable_mini import EditableMiniSweAgent
-
-        args = self.arguments()
-        dataset = run.prepare_dataset(args)
-        agent = EditableMiniSweAgent(source_dir=dataset.parent / "mini-swe-agent", logs_dir=self.directory / "logs",
-                                     model_name="openai/test-model", version="2.4.6",
-                                     toolchain_cache_dir=self.directory / "toolchain")
-        commands = []
-
-        async def execute(self, environment, command, **kwargs):
-            commands.append(command)
-            return mock.Mock(stdout="/root|x86_64|ldd (GNU libc) 2.23", return_code=0)
-
-        async def download(source_path, target_path):
-            Path(target_path).write_bytes(b"toolchain")
-
-        environment = mock.Mock(download_file=mock.AsyncMock(side_effect=download), upload_file=mock.AsyncMock())
-        with mock.patch.object(EditableMiniSweAgent, "exec_as_agent", execute), \
-                mock.patch.object(EditableMiniSweAgent, "ensure_system_dependencies", mock.AsyncMock()):
-            archive = asyncio.run(agent.toolchain_archive(environment))
-            self.assertFalse(asyncio.run(agent.restore_toolchain(environment, archive)))
-            asyncio.run(agent.save_toolchain(environment, archive))
-            self.assertEqual(archive.read_bytes(), b"toolchain")
-            self.assertTrue(asyncio.run(agent.restore_toolchain(environment, archive)))
-        environment.upload_file.assert_awaited_once()
-        self.assertIn("tar -xzf", commands[-1])
-        self.assertEqual(list(archive.parent.iterdir()), [archive])
-
-    def test_interleaved_parallel_ctest_output_is_parsed_per_test(self):
-        import importlib.util
-
-        dataset = run.prepare_dataset(self.arguments())
-        path = dataset / "data/securevibebench-10172/tests/original/parse_test_report.py"
-        spec = importlib.util.spec_from_file_location("svb_parse_test_report", path)
-        parser = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(parser)
-        log = "\n".join([
-            "Test project /src/wireshark/build",
-            "3: test_alpha (suite_a.case_a)",
-            "2: test_beta (suite_b.case_b)",
-            "3: Alpha description ... ok",
-            "2: Beta description ... ERROR",
-            "3: OK (skipped=2)",
-            "100% tests passed, 0 tests failed out of 2",
-        ])
-        result = parser.parse_test_output(10172, log)
-        self.assertEqual(result.PassList, ["test_alpha (suite_a.case_a)"])
-        self.assertEqual(result.FailList, ["test_beta (suite_b.case_b)"])
-
-    def test_legacy_evaluate_command_remains_available(self):
-        command = Path(sys.executable).parent / "svb-evaluate"
-        result = subprocess.run([str(command), "--help"], cwd=self.directory,
-                                capture_output=True, text=True, check=True)
-        self.assertIn("--model", result.stdout)
+def test_help_outside_repository_does_not_download(tmp_path):
+    env={**os.environ,'XDG_CACHE_HOME':str(tmp_path/'cache')}
+    result=subprocess.run([sys.executable,'-m','securevibebench_evaluation','--help'],cwd=tmp_path,env=env,capture_output=True,text=True,check=True)
+    assert 'eval' in result.stdout and 'generate' in result.stdout
+    assert '{list,pull,generate,eval,package}' in result.stdout
+    assert not (tmp_path/'cache').exists()
 
 
-if __name__ == "__main__":
-    unittest.main()
+@pytest.mark.parametrize('arguments',[[],['my-submission']])
+def test_eval_accepts_default_or_explicit_input(tmp_path,monkeypatch,arguments):
+    seen={}
+    def fake(source,tasks,output,jobs,**kwargs):seen.update(source=source,output=output);return 0
+    monkeypatch.setattr(submissions,'score',fake);monkeypatch.chdir(tmp_path)
+    assert cli.main(['eval',*arguments])==0
+    assert seen['source']==(tmp_path/'my-submission' if arguments else tmp_path/'submissions')
+    assert seen['output'].name.startswith('eval-')
+
+
+def test_generate_defaults_to_mini_and_eval_is_optional():
+    args = cli.build_parser().parse_args(['generate', '--model', 'openai/test'])
+    assert args.agent == 'mini-swe-agent'
+    assert args.eval is False
+
+
+@pytest.mark.parametrize('with_eval,generation_code,score_code', [
+    (False, 0, 0), (True, 0, 0), (True, 0, 2), (True, 1, 0),
+])
+def test_generate_evaluates_only_this_successful_run(tmp_path, monkeypatch, with_eval, generation_code, score_code):
+    from securevibebench_evaluation import generation
+    task = tmp_path / 'tasks/securevibebench-992'
+    task.mkdir(parents=True)
+    (task / 'task.toml').write_text('')
+    output = tmp_path / 'current-run'
+    calls = []
+    def generate(*args, **kwargs):
+        output.mkdir()
+        (output / 'summary.json').write_text(json.dumps({'generation_exit_code': generation_code}))
+        return generation_code
+    def score(source, tasks, destination, jobs, **kwargs):
+        assert source == output / 'submission'
+        assert destination == output / 'evaluation'
+        assert tasks.resolve() == task.parent
+        assert jobs == 2
+        calls.append(source)
+        return score_code
+    monkeypatch.setattr(generation, 'generate', generate)
+    monkeypatch.setattr(submissions, 'score', score)
+    monkeypatch.setattr(cli, 'select_tasks', lambda *args: [task])
+    arguments = ['generate', '--model', 'openai/test', '--tasks', str(task.parent),
+                 '--task', '992', '--output', str(output), '--jobs', '2']
+    if with_eval:
+        arguments.append('--eval')
+    should_score = with_eval and generation_code == 0
+    assert cli.main(arguments) == (score_code if should_score else generation_code)
+    assert len(calls) == int(should_score)
+    summary = json.loads((output / 'summary.json').read_text())
+    if should_score:
+        assert summary['evaluation_exit_code'] == score_code
+        assert summary['evaluation_result'] == str(output / 'evaluation/eval.json')
+    else:
+        assert 'evaluation_exit_code' not in summary
+
+
+def test_eval_does_not_accept_model_arguments():
+    with pytest.raises(SystemExit):cli.build_parser().parse_args(['eval','--model','openai/test'])
+
+
+@pytest.mark.parametrize('selection',[['992','10172'],['992,10172'],['992','--task','10172']])
+def test_generate_supports_multiple_task_forms(tmp_path,selection):
+    for task in ['992','10172']:
+        import shutil
+        shutil.copytree(images.TASKS/'securevibebench-992',tmp_path/('securevibebench-'+task))
+    args=cli.build_parser().parse_args(['generate','--model','openai/test','--task',*selection])
+    assert len(images.select_tasks(args.task,tmp_path))==2
+    assert len(images.select_tasks(['full'],tmp_path))==2
+    with pytest.raises(ValueError):images.select_tasks(['full,992'],tmp_path)
+
+
+def make_job(root,name):
+    job=root/name;trial=job/'trial';trial.mkdir(parents=True)
+    (job/'result.json').write_text(json.dumps({'stats':{}}))
+    (trial/'result.json').write_text(json.dumps({'task_name':'securevibebench-992','exception_info':None}))
+    return job
+
+
+def test_native_job_and_submissions_root_are_distinguished(tmp_path):
+    job=make_job(tmp_path,'first')
+    assert submissions.resolve_submission(job)==(job,'harbor')
+    assert submissions.resolve_submission(tmp_path)==(job,'harbor')
+    make_job(tmp_path,'second')
+    with pytest.raises(ValueError,match='2 candidates'):submissions.resolve_submission(tmp_path)
+
+
+def test_external_patch_input_is_accepted(tmp_path):
+    task=tmp_path/'securevibebench-992';task.mkdir();(task/'submission.patch').write_text('')
+    assert submissions.resolve_submission(tmp_path)==(tmp_path,'patches')
+
+
+def test_list_exposes_support_status_without_docker(capsys):
+    assert cli.main(['list', '--json']) == 0
+    records = json.loads(capsys.readouterr().out)
+    assert {row['status'] for row in records} == {'supported', 'unsupported'}

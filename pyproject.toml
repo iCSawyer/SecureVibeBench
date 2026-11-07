@@ -1,11 +1,10 @@
 [build-system]
 requires = ["setuptools>=77"]
-build-backend = "build_backend"
-backend-path = ["tools"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "securevibebench"
-version = "0.2.2"
+version = "0.3.0"
 description = "Generate and evaluate secure coding agents on SecureVibeBench"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -20,18 +19,18 @@ classifiers = [
     "Topic :: Software Development :: Testing",
 ]
 dependencies = [
-    "harbor>=0.25.0,<0.26.0",
-    "docker>=7.1.0",
-    "pyyaml>=6.0.2",
-    "python-dotenv>=1.1.1",
+    "harbor==0.25.0",
+    "tomli-w>=1.2,<2",
 ]
 
+[project.optional-dependencies]
+publish = ["huggingface-hub>=1.33,<2"]
+
 [dependency-groups]
-dev = ["build>=1.2.2", "twine>=6.0"]
+dev = ["build>=1.2.2", "twine>=6.0", "pytest>=8,<10"]
 
 [project.scripts]
 securevibebench = "securevibebench_evaluation.cli:main"
-svb-evaluate = "securevibebench_evaluation.run:main"
 
 [project.urls]
 Homepage = "https://github.com/iCSawyer/SecureVibeBench"
@@ -47,4 +46,7 @@ include-package-data = false
 securevibebench_evaluation = "evaluation"
 
 [tool.setuptools.package-data]
-securevibebench_evaluation = ["harbor.yaml", "resources.json", "resources.tar.gz"]
+securevibebench_evaluation = ["availability.json", "image-catalog.json", "harbor_assets/*.py", "framework/*.json", "framework/*.tar.gz", "tasks/*/*.toml", "tasks/*/*.md", "tasks/*/tests/*.sh"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

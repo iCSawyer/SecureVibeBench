@@ -1,10 +1,11 @@
 include LICENSE README.md uv.lock
-recursive-include evaluation *.py *.yaml *.sh *.md
-include evaluation/resources.json evaluation/mini-source.tar.gz
-exclude evaluation/resources.tar.gz
+recursive-include evaluation *.py *.json *.toml *.md *.sh *.tar.gz
+recursive-include tools/image_build *.json
 recursive-include tools *.py
 recursive-include docs *.md
 recursive-include tests *.py
+recursive-include example *.md *.toml *.py *.sh Dockerfile *.yaml *.json
 prune evaluation/mini-swe-agent
+prune example/securevibebench-992/environment/toolchain
 prune dev
 global-exclude __pycache__ *.py[cod] .env .env.*
