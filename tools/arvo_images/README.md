@@ -12,6 +12,8 @@ python tools/arvo_images/prepare.py --tasks ORIGINAL_TASKS --task ID \
   --owner icsawyer --package securevibebench --publish
 ```
 
+The image sets CMake, CTest, and Make parallelism from `--cpus`. Docker CPU affinity alone does not limit the number of compiler processes. CMake build commands also pass the job limit to Make or Ninja, so CMake versions before 3.12 are covered. Timed-out build and test commands stop their process group, including child compilers.
+
 Online preparation acquires dependencies. Offline acceptance builds the reference and starting source, records the baseline, and tests native Harbor mini-swe-agent setup and separate verification. Publication requires an existing Public package before any push. It verifies the published manifest anonymously and pulls the digest with an empty Docker authentication config to confirm the image ID. Credentials and original Git history must not remain in the image. Keep raw logs and acceptance evidence.
 
 Use `GITHUB_DOCKER` in the project `.env` for maintainer publication only. The temporary Docker authentication config is removed after each image. The shared package stays Public, and tags use `arvo-ID-offline-YYYYMMDD-IMAGEID`. The publisher refuses missing or private packages and refuses to replace a tag that points to a different image. It does not modify existing task tags.
@@ -36,7 +38,7 @@ securevibebench pull --tasks data --task full
 securevibebench generate --tasks data --task ID --model 'openai/<model>' --local-images --eval
 ```
 
-The exporter records each registry digest, expected image ID, platform, baseline hash, and verified native agent. Publish those definitions and the image catalog to HF `full-habour`; do not put the complete dataset in GitHub. Update `evaluation/dataset-lock.json` after verifying the HF commit. The current HF release contains 42 image tasks. The wrapper only accepts declared image tasks and never falls back to a Dockerfile.
+The exporter records each registry digest, expected image ID, platform, baseline hash, and verified native agent. Publish those definitions and the image catalog to HF `full-habour`; do not put the complete dataset in GitHub. Update `evaluation/dataset-lock.json` after verifying the HF commit. The current HF release contains 71 image tasks. The wrapper only accepts declared image tasks and never falls back to a Dockerfile.
 
 Published offline bundles from earlier batches retain their own framework wheel and importer. Use those frozen bundles as complete archives. The current evaluator consumes the minimal image task format; export a new task root when using an earlier distribution with the current package.
 

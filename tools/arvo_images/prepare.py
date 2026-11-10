@@ -114,6 +114,21 @@ def stable_directories(text, repo_cwd=None):
     return text
 
 
+def stable_cmake(text):
+    """Pass the job limit to generators used by older CMake versions."""
+    lines = []
+    for line in text.splitlines(keepends=True):
+        body = line.rstrip("\r\n")
+        if re.fullmatch(r"[ \t]*cmake[ \t]+--build[ \t]+[^;&|<>`\n]+", body):
+            tokens = shlex.split(body)
+            has_jobs = any(token == "--parallel" or token.startswith("-j") for token in tokens)
+            if "--" not in tokens and not has_jobs:
+                body += ' -- -j"${CMAKE_BUILD_PARALLEL_LEVEL:-4}"'
+                line = body + line[len(line.rstrip("\r\n")):]
+        lines.append(line)
+    return "".join(lines)
+
+
 def stable_miniz(text, identifier):
     if identifier != "27413":
         return text
@@ -169,7 +184,8 @@ def stable_mruby(text, repo_cwd):
 def stable_functional(text, identifier=None, repo_cwd=None):
     # Preserve test commands; permit rerunning scripts that create a build folder.
     result = stable_miniz(
-        stable_mruby(stable_directories(text, repo_cwd), repo_cwd), identifier
+        stable_mruby(stable_cmake(stable_directories(text, repo_cwd)), repo_cwd),
+        identifier,
     )
     if identifier in AUTOTOOLS_CLEAN_TASKS:
         result = "if [ -f Makefile ]; then make distclean; fi\n" + result
@@ -191,7 +207,8 @@ def stable_functional(text, identifier=None, repo_cwd=None):
 
 def stable_reference(text, identifier, repo_cwd=None):
     text = stable_miniz(
-        stable_mruby(stable_directories(text, repo_cwd), repo_cwd), identifier
+        stable_mruby(stable_cmake(stable_directories(text, repo_cwd)), repo_cwd),
+        identifier,
     )
     if identifier in FREETYPE_TASKS:
         text = text.replace(" libtool-dev", "").replace(
@@ -219,6 +236,26 @@ def stable_reference(text, identifier, repo_cwd=None):
     if identifier in OPENSC_TASKS and not text.startswith(OPENSC_ORDINARY_CLEAN):
         text = OPENSC_ORDINARY_CLEAN + text
     return text
+
+
+def configure_build_parallelism(dockerfile, jobs):
+    """Limit build tools inside the image as well as Docker's CPU allocation."""
+    if type(jobs) is not int or jobs < 1:
+        raise ValueError("Build jobs must be a positive integer")
+    lines = dockerfile.read_text().splitlines()
+    lines = [
+        line for line in lines
+        if not line.startswith("ENV CMAKE_BUILD_PARALLEL_LEVEL=")
+    ]
+    position = next(
+        index + 1 for index, line in enumerate(lines) if line.startswith("FROM ")
+    )
+    lines.insert(
+        position,
+        f"ENV CMAKE_BUILD_PARALLEL_LEVEL={jobs} "
+        f"CTEST_PARALLEL_LEVEL={jobs} MAKEFLAGS=-j{jobs}",
+    )
+    dockerfile.write_text("\n".join(lines) + "\n")
 
 
 class Builder:
@@ -460,6 +497,8 @@ class Builder:
         ]
         (context / "Dockerfile").write_text("\n".join(source) + "\n")
         configure_package_installation(context / "Dockerfile")
+        configure_build_parallelism(context / "Dockerfile", self.args.cpus)
+        self.state["build_jobs"] = self.args.cpus
         tag = "junkai-arvo-foundation-" + self.id + ":" + self.suffix
         self.run(
             "online-preparation",

@@ -1,14 +1,14 @@
 {
   "repo_id": "iCSawyer/SecureVibeBench",
   "branch": "full-habour",
-  "revision": "2296e7fbc3890b54a74981fdbde3673701ffb337",
-  "task_count": 42,
+  "revision": "ea13a6c876ddf75327b1b0b00f476c3bf6b6f3b5",
+  "task_count": 71,
   "benchmark_task_count": 105,
-  "unsupported_task_count": 63,
+  "unsupported_task_count": 34,
   "archive": {
     "filename": "tasks.tar.gz",
-    "sha256": "bfb9158d63acd4d10083d54048c78282b824b19ec4990f6a2b1142d42aa4b820"
+    "sha256": "20f22a40030ac22456dba1aa94d08f57077263f8a3c509c914de8fd789d576bb"
   },
-  "manifest_sha256": "94247be5ee876e53cf963b95743d3d3c9765a2883c1655dfb458c9b4c6dbb18a",
-  "url": "https://huggingface.co/datasets/iCSawyer/SecureVibeBench/commit/2296e7fbc3890b54a74981fdbde3673701ffb337"
+  "manifest_sha256": "7e36ebb89b80ee64bf5682dba16ec75908c687596027857ac7abdf141db26f08",
+  "url": "https://huggingface.co/datasets/iCSawyer/SecureVibeBench/commit/ea13a6c876ddf75327b1b0b00f476c3bf6b6f3b5"
 }

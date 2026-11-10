@@ -2,6 +2,7 @@
 import importlib.util
 import json
 import os
+import signal
 from pathlib import Path
 import socket
 import shutil
@@ -16,12 +17,19 @@ REPO = CONFIG['repo_cwd']
 
 def command(args, log, timeout=3600, check=True):
     with log.open('wb') as stream:
-        try:
-            result = subprocess.run(args, cwd=REPO, stdout=stream, stderr=subprocess.STDOUT, timeout=timeout,
-                                    env={**os.environ, 'SVB_LOG_DIR': str(log.parent), 'SVB_LOG_PREFIX': log.stem})
-            code = result.returncode
-        except subprocess.TimeoutExpired:
-            code = 124
+        with subprocess.Popen(args, cwd=REPO, stdout=stream, stderr=subprocess.STDOUT,
+                              start_new_session=True,
+                              env={**os.environ, 'SVB_LOG_DIR': str(log.parent), 'SVB_LOG_PREFIX': log.stem}) as process:
+            try:
+                code = process.wait(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                # A shell timeout must also stop its compiler and test children.
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                process.wait()
+                code = 124
     log.with_suffix(log.suffix + '.exit').write_text(str(code) + '\n')
     if check and code:
         with log.open(errors='replace') as stream:

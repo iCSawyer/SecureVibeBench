@@ -136,3 +136,40 @@ def test_miniz_case_markers_produce_actual_pass_identifiers(tmp_path):
     assert result['type'] == 'ListResult'
     assert result['PassList'] == ['example1']
     assert result['FailList'] == ['example5-roundtrip']
+
+
+def test_command_timeout_stops_background_compilers(tmp_path):
+    import os
+    import signal
+    import sys
+    import time
+
+    scope = runtime(tmp_path)
+    script = (
+        "import subprocess,time\n"
+        "from pathlib import Path\n"
+        "child=subprocess.Popen(['sleep','60'])\n"
+        "Path('child.pid').write_text(str(child.pid))\n"
+        "print('compiler started',flush=True)\n"
+        "time.sleep(60)\n"
+    )
+    log = tmp_path / "logs/timeout.log"
+    child = None
+    try:
+        assert scope['command']([sys.executable, '-c', script], log, timeout=0.5, check=False) == 124
+        child = int((tmp_path / "child.pid").read_text())
+        for _ in range(50):
+            status = Path(f'/proc/{child}/stat')
+            if not status.exists() or status.read_text().split(') ', 1)[1].split()[0] == 'Z':
+                break
+            time.sleep(0.01)
+        else:
+            pytest.fail('Timed-out command left a live compiler process')
+        assert log.with_suffix('.log.exit').read_text().strip() == '124'
+        assert 'compiler started' in log.read_text()
+    finally:
+        if child is not None:
+            try:
+                os.kill(child, signal.SIGKILL)
+            except ProcessLookupError:
+                pass

@@ -176,3 +176,56 @@ def test_provenance_uses_the_context_hashes_after_shared_sources_change(tmp_path
     (environment / "Dockerfile").write_text("FROM scratch\n")
     result = builder.task_config("sha256:" + "1" * 64, tmp_path, prepared=True)
     assert result["metadata"]["preparation_shared_assets"] == frozen
+
+
+def test_image_build_parallelism_controls_the_actual_cmake_ninja_build(tmp_path):
+    import os
+    import shutil
+    import subprocess
+    import sys
+
+    if not all(shutil.which(name) for name in ("cmake", "ninja")):
+        pytest.skip("CMake and Ninja are required for the build regression")
+    dockerfile = tmp_path / "Dockerfile"
+    dockerfile.write_text("FROM scratch\nRUN build\n")
+    module.configure_build_parallelism(dockerfile, 2)
+    first = dockerfile.read_text()
+    module.configure_build_parallelism(dockerfile, 2)
+    assert dockerfile.read_text() == first
+    settings = dict(word.split("=", 1) for word in first.splitlines()[1].removeprefix("ENV ").split())
+    environment = {**os.environ, **settings}
+    checker = tmp_path / "work.py"
+    checker.write_text(
+        "import fcntl,time\n"
+        "from pathlib import Path\n"
+        "with open('jobs.lock','a') as lock:\n"
+        " fcntl.flock(lock,fcntl.LOCK_EX)\n"
+        " p=Path('jobs.txt'); active,peak=map(int,p.read_text().split()) if p.exists() else (0,0)\n"
+        " active+=1; p.write_text(f'{active} {max(peak,active)}')\n"
+        " fcntl.flock(lock,fcntl.LOCK_UN)\n"
+        " time.sleep(0.1)\n"
+        " fcntl.flock(lock,fcntl.LOCK_EX)\n"
+        " active,peak=map(int,p.read_text().split()); p.write_text(f'{active-1} {peak}')\n"
+    )
+    (tmp_path / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.12)\nproject(parallel_regression NONE)\n" +
+        "\n".join(f'add_custom_target(job{i} ALL COMMAND "{sys.executable}" "{checker}")' for i in range(8)) + "\n"
+    )
+    subprocess.run(["cmake", "-S", str(tmp_path), "-B", str(tmp_path / "build"), "-G", "Ninja"], check=True, capture_output=True)
+    subprocess.run(["cmake", "--build", str(tmp_path / "build")], env=environment, check=True, capture_output=True)
+    active, peak = map(int, (tmp_path / "build/jobs.txt").read_text().split())
+    assert active == 0 and peak == 2
+    assert settings["CTEST_PARALLEL_LEVEL"] == "2"
+    assert settings["MAKEFLAGS"] == "-j2"
+
+
+def test_old_cmake_receives_generator_job_limit_without_changing_test_targets():
+    source = "cmake -B build -G Ninja\ncmake --build ./build\ncmake --build ./build --target check-hermes\n"
+    result = module.stable_functional(source, "25815", "/src/hermes")
+    assert 'cmake --build ./build -- -j"${CMAKE_BUILD_PARALLEL_LEVEL:-4}"' in result
+    assert 'cmake --build ./build --target check-hermes -- -j"${CMAKE_BUILD_PARALLEL_LEVEL:-4}"' in result
+    assert "cmake -B build -G Ninja" in result
+    assert module.stable_functional(result, "25815", "/src/hermes") == result
+    assert module.stable_reference(source, "25815", "/src/hermes") == result
+    assert module.stable_cmake('cmake --build build -- -j2\n') == 'cmake --build build -- -j2\n'
+    assert module.stable_cmake('# cmake --build build\n') == '# cmake --build build\n'
