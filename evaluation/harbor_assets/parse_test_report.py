@@ -875,6 +875,11 @@ def parse_test_output_pcre2(s: str) -> ParseResult:
     return parse_test_output_harfbuzz(s)
 
 def parse_test_output_file(s: str) -> ParseResult:
+    markers = re.findall(r'^SVB_FILE_CASE (\S+) (PASS|FAIL)$', s, re.MULTILINE)
+    if markers:
+        failed = {name for name, status in markers if status == 'FAIL'}
+        passed = {name for name, status in markers if status == 'PASS'} - failed
+        return ListResult(sorted(passed), sorted(failed), [])
     if s.strip().endswith("0"):
         return BoolResult(Status=True)
     else:

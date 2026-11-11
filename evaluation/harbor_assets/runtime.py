@@ -16,6 +16,8 @@ REPO = CONFIG['repo_cwd']
 
 
 def command(args, log, timeout=3600, check=True):
+    if list(args) == ['arvo', 'compile']:
+        timeout = max(timeout, int(CONFIG.get('compile_timeout_seconds', 3600)))
     with log.open('wb') as stream:
         with subprocess.Popen(args, cwd=REPO, stdout=stream, stderr=subprocess.STDOUT,
                               start_new_session=True,

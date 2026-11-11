@@ -156,3 +156,13 @@ The original MuPDF PDF and Open vSwitch dictionary are retained in `fixtures/`.
 Their manifest records the original URL, source image, and SHA256. The producer
 checks each hash before copying an input into the image. Compilation and tests
 read these local files and do not download replacements.
+
+## Repeated-build repairs
+
+The producer cleans generated caches when ordinary tests and fuzz targets use different compilers or architectures. Optional fuzz dependencies absent from the original image remain disabled after ordinary-test packages are installed. Target sanitizer flags are retained.
+
+Task 38843 builds its host `mrbc` compiler from the current candidate source with GCC, then uses it to generate code for the original MSan target. The producer checks the target library for MSan symbols. It never reuses a reference-source host compiler.
+
+Task 20702 runs `make check` and each fixture through the original `tests/test` driver. The report retains aggregate and individual failures. Acceptance compares the reference pass set with the submitted pass set.
+
+Pinned libavc and igraph archives are fetched only by the online producer and copied into the image after SHA-256 verification. Offline commands use those files. CUPS libraries finish building before installation starts. Hermes compilation has a 7200-second limit; its compiler and lit job counts follow the image CPU budget.

@@ -10,7 +10,7 @@ import shutil
 import sys
 
 
-def stable_arvo_build(source, directory, project=None):
+def stable_arvo_build(source, directory, project=None, identifier=None):
     """Keep ARVO commands in the base image's declared working directory."""
     if not Path(directory).is_absolute():
         raise ValueError("ARVO build directory must be absolute")
@@ -66,6 +66,45 @@ def stable_arvo_build(source, directory, project=None):
             lambda match: "cp /opt/svb/offline-assets/openvswitch-json.dict " + match.group(1) + "/json.dict",
             source,
         )
+    if project and Path(project).name == "harfbuzz":
+        prefix += (
+            'case " $CFLAGS $CXXFLAGS " in\n'
+            '  *" -m32 "*) export SVB_HB_FUZZ_OPTIONS="-Dfreetype=disabled -Dglib=disabled -Dgobject=disabled -Dcairo=disabled -Dicu=disabled" ;;\n'
+            "esac\n"
+        )
+        source = source.replace("meson --default-library=static", 'meson ${SVB_HB_FUZZ_OPTIONS:-} --default-library=static')
+    if project and Path(project).name == "ghostpdl":
+        source = source.replace("make install-headers install-libs", "make install-headers\nmake install-libs")
+        source = source.replace("make -C filter libs install-libs", "make -C filter libs\nmake -C filter install-libs")
+        source = source.replace('  mv tmp_file.txt $f\n  s=$(sha1sum "$f"', '  s=$(sha1sum tmp_file.txt')
+        source = source.replace('  cp "$f" "$WORK/all_color_seeds/$s"', '  cp tmp_file.txt "$WORK/all_color_seeds/$s"\n  rm -f tmp_file.txt')
+    if project and Path(project).name == "igraph":
+        clean = "rm -rf " + shlex.quote(str(Path(project) / "build")) + " /src/libxml2-2.12.5/build\n"
+        if clean not in source:
+            prefix += clean
+        source = source.replace("mkdir $DEPS_PATH", "mkdir -p $DEPS_PATH")
+        source = source.replace("wget https://download.gnome.org/sources/libxml2/2.12/libxml2-2.12.5.tar.xz", "cp /opt/svb/offline-assets/libxml2-2.12.5.tar.xz .")
+    if project and Path(project).name == "zeek":
+        clean = "rm -rf " + shlex.quote(str(Path(project) / "build")) + "\n"
+        if clean not in source:
+            prefix += clean
+        copy = 'cp -R ./install-root/share/zeek ${OUT}/oss-fuzz-zeek-scripts'
+        cleanup = 'rm -rf "${OUT}/oss-fuzz-zeek-scripts"\n'
+        if cleanup not in source:
+            source = source.replace(copy, cleanup + copy)
+    if project and Path(project).name == "libjxl":
+        if "-DCMAKE_DISABLE_FIND_PACKAGE_JPEG=ON" not in source:
+            source = source.replace("build_args=(", "build_args=(\n  -DCMAKE_DISABLE_FIND_PACKAGE_JPEG=ON", 1)
+    if project and Path(project).name == "wireshark":
+        source = source.replace('CMAKE_DEFINES="-DBUILD_fuzzshark=ON"', 'CMAKE_DEFINES="-DBUILD_fuzzshark=ON -DENABLE_KERBEROS=OFF"')
+        cleanup = 'rm -rf "$WIRESHARK_BUILD_PATH"\nmkdir -p "$WIRESHARK_BUILD_PATH"'
+        if cleanup not in source:
+            source = source.replace('mkdir -p "$WIRESHARK_BUILD_PATH"', cleanup)
+    if str(identifier) == "38843":
+        bootstrap = "/opt/svb/python/bin/python3 /opt/svb/bootstrap_mruby.py"
+        source = re.sub(r"(?m)^rake -m$", lambda match: bootstrap + " build\nMRUBY_CONFIG=/opt/svb/mruby-fuzz.rb rake -m -j\"${CMAKE_BUILD_PARALLEL_LEVEL:-8}\"\n" + bootstrap + " check", source)
+    source = re.sub(r'--parallel(?=[ \t]+--|[ \t]*$)', '--parallel "${CMAKE_BUILD_PARALLEL_LEVEL:-8}"', source, flags=re.MULTILINE)
+    source = re.sub(r'(?m)^([ \t]*)ninja(?![^\n]*[ \t]-j)(?=[ \t]|$)', r'\1ninja -j"${CMAKE_BUILD_PARALLEL_LEVEL:-8}"', source)
     lines = source.splitlines(keepends=True)
     position = 1 if lines and lines[0].startswith("#!") else 0
     command = "cd " + shlex.quote(directory) + "\n"
@@ -108,7 +147,7 @@ def main():
         build_cwd = metadata["arvo_build_cwd"]
         build = Path("/src/build.sh")
         original = build.read_text()
-        updated = stable_arvo_build(original, build_cwd, metadata["repo_cwd"])
+        updated = stable_arvo_build(original, build_cwd, metadata["repo_cwd"], metadata["localid"])
         (logs / "arvo-build-before.sh").write_text(original)
         (logs / "arvo-build-after.sh").write_text(updated)
         build.write_text(updated)

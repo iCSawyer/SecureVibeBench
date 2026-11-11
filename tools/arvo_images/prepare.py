@@ -188,9 +188,9 @@ def stable_functional(text, identifier=None, repo_cwd=None):
         stable_mruby(stable_cmake(stable_directories(text, repo_cwd)), repo_cwd),
         identifier,
     )
-    if identifier in AUTOTOOLS_CLEAN_TASKS:
+    if identifier in AUTOTOOLS_CLEAN_TASKS and "if [ -f Makefile ]; then make distclean; fi\n" not in result:
         result = "if [ -f Makefile ]; then make distclean; fi\n" + result
-    if identifier in FREETYPE_TASKS:
+    if identifier in FREETYPE_TASKS and "--with-freetype=yes" not in result:
         result = result.replace(
             './configure LIBS="-lpthread"',
             './configure LIBS="-lpthread" --with-freetype=yes',
@@ -203,7 +203,7 @@ def stable_functional(text, identifier=None, repo_cwd=None):
         result = NDPI_ORDINARY_ENV + result
     if identifier in OPENSC_TASKS and not result.startswith(OPENSC_ORDINARY_CLEAN):
         result = OPENSC_ORDINARY_CLEAN + result
-    return repair_test_script(result, repo_cwd, online=False)
+    return repair_test_script(result, repo_cwd, online=False, identifier=identifier)
 
 
 def stable_reference(text, identifier, repo_cwd=None):
@@ -211,12 +211,12 @@ def stable_reference(text, identifier, repo_cwd=None):
         stable_mruby(stable_cmake(stable_directories(text, repo_cwd)), repo_cwd),
         identifier,
     )
-    if identifier in FREETYPE_TASKS:
+    if identifier in FREETYPE_TASKS and "--with-freetype=yes" not in text:
         text = text.replace(" libtool-dev", "").replace(
             './configure LIBS="-lpthread"',
             './configure LIBS="-lpthread" --with-freetype=yes',
         )
-    if identifier in AUTOTOOLS_CLEAN_TASKS:
+    if identifier in AUTOTOOLS_CLEAN_TASKS and "if [ -f Makefile ]; then make distclean; fi\n" not in text:
         text = re.sub(
             r"(?m)^(git checkout[^\n]*\n)",
             r"\1if [ -f Makefile ]; then make distclean; fi\n",
@@ -236,7 +236,7 @@ def stable_reference(text, identifier, repo_cwd=None):
         text = NDPI_ORDINARY_ENV + text
     if identifier in OPENSC_TASKS and not text.startswith(OPENSC_ORDINARY_CLEAN):
         text = OPENSC_ORDINARY_CLEAN + text
-    return repair_test_script(text, repo_cwd, online=True)
+    return repair_test_script(text, repo_cwd, online=True, identifier=identifier)
 
 
 def configure_build_parallelism(dockerfile, jobs):
@@ -415,6 +415,15 @@ class Builder:
         if context.exists():
             context.rename(self.work / ("foundation-archive-" + str(time.time_ns())))
         materialize(self.task, context, self.config["metadata"])
+        if self.id == "25815":
+            task_json = context / "svb/task.json"
+            settings = json.loads(task_json.read_text())
+            settings["compile_timeout_seconds"] = 7200
+            task_json.write_text(json.dumps(settings, indent=2) + "\n")
+        if self.id == "20702":
+            shutil.copy2(HERE / "file_test_runner.py", context / "svb/file_test_runner.py")
+        if self.id == "38843":
+            shutil.copy2(HERE / "bootstrap_mruby.py", context / "svb/bootstrap_mruby.py")
         self.state["offline_assets"] = install_fixed_assets(
             context, self.config["metadata"]["repo_cwd"]
         )

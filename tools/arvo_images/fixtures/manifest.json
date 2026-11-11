@@ -15,6 +15,18 @@
       "bytes": 416,
       "recovered_from_image": "sha256:d2e5856ac68096adf1e521870ae69faf17c5690606e87d4743a5327e7ab464a3",
       "image_path": "/out/json.dict"
+    },
+    {
+      "filename": "AvcTestRes-1.0.zip",
+      "url": "https://storage.googleapis.com/android_media/external/libavc/tests/AvcTestRes-1.0.zip",
+      "sha256": "71d5cb30632e35e1409f82a2494172dc9469e6cc2b3ca61bc0eb1a662c60d853",
+      "bytes": 10083568
+    },
+    {
+      "filename": "libxml2-2.12.5.tar.xz",
+      "url": "https://download.gnome.org/sources/libxml2/2.12/libxml2-2.12.5.tar.xz",
+      "sha256": "a972796696afd38073e0f59c283c3a2f5a560b5268b4babc391b286166526b21",
+      "bytes": 2643452
     }
   ]
 }

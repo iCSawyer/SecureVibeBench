@@ -16,6 +16,10 @@
 
 ## Unreleased (`habour` branch)
 
+- Separate MRuby host code generation from its instrumented target build. Cap bare CMake, Ninja, and Hermes lit parallelism.
+- Clean generated build caches when ordinary and fuzz toolchains differ. Serialize CUPS build/install goals and retain real GhostPDL smoke-test failures.
+- Cache fixed libavc and igraph inputs with SHA-256 checks. Report every upstream file test fixture, including failures after the aggregate test stops.
+
 - Record shared runtime hashes from each image build context so later source edits do not change its provenance.
 
 - Support explicit count-based functional results for newly prepared images, with non-regressing pass/total counts and no increase in failures or unknowns. Keep existing list and Boolean rules.
