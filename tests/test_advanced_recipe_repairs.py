@@ -94,3 +94,12 @@ def test_remote_input_download_is_pinned_cached_and_rejects_corruption(tmp_path,
     (tmp_path / '.cache/arvo-image-assets/test.tar.xz').write_bytes(b'corrupt')
     with pytest.raises(ValueError, match='checksum mismatch'):
         recipe_repairs.install_fixed_assets(tmp_path / 'third', '/src/test-project')
+
+
+def test_binutils_generated_fuzz_header_is_replaced_on_each_build(tmp_path):
+    (tmp_path / 'readelf.c').write_text('int main (int argc, char **argv) { return 0; }\n')
+    source = "mkdir fuzz\ni=readelf\nsed 's/main (int argc/old_main (int argc/' $i.c >> $i.h\n"
+    script = container.stable_arvo_build(source, str(tmp_path), '/src/binutils-gdb', '35165')
+    for _ in range(2):
+        subprocess.run(['bash', '-eu', '-c', script], check=True, capture_output=True)
+    assert (tmp_path / 'readelf.h').read_text().count('old_main') == 1

@@ -78,6 +78,10 @@ def stable_arvo_build(source, directory, project=None, identifier=None):
         source = source.replace("make -C filter libs install-libs", "make -C filter libs\nmake -C filter install-libs")
         source = source.replace('  mv tmp_file.txt $f\n  s=$(sha1sum "$f"', '  s=$(sha1sum tmp_file.txt')
         source = source.replace('  cp "$f" "$WORK/all_color_seeds/$s"', '  cp tmp_file.txt "$WORK/all_color_seeds/$s"\n  rm -f tmp_file.txt')
+    if str(identifier) == "35165":
+        source = source.replace("mkdir fuzz\n", "mkdir -p fuzz\n")
+        # readelf.h is generated from readelf.c; repeated appends duplicate its body.
+        source = source.replace("$i.c >> $i.h", "$i.c > $i.h")
     if project and Path(project).name == "igraph":
         clean = "rm -rf " + shlex.quote(str(Path(project) / "build")) + " /src/libxml2-2.12.5/build\n"
         if clean not in source:
