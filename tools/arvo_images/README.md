@@ -141,3 +141,18 @@ utilities. Compression and decompression still compare the resulting files with
 `diff`. Successful program cases emit explicit IDs after their assertions; the
 parser preserves those case IDs instead of assuming a fixed number of success
 messages. An earlier command failure prevents its pass marker.
+
+
+## Repeated offline recipes
+
+Project adapters keep build scripts usable across reference, starting-source, and
+submission checks. Miniz uses a fresh generated build directory when compiler
+flags change. MRuby retains its downloaded LPM dependency and bounds Ninja jobs.
+MuPDF copies seed resources instead of moving them. Scripts run from the declared
+repository directory; host-side Docker launch commands are removed from container
+tests. Python package installation remains in online reference preparation.
+
+The original MuPDF PDF and Open vSwitch dictionary are retained in `fixtures/`.
+Their manifest records the original URL, source image, and SHA256. The producer
+checks each hash before copying an input into the image. Compilation and tests
+read these local files and do not download replacements.

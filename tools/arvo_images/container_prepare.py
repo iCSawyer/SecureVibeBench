@@ -41,6 +41,31 @@ def stable_arvo_build(source, directory, project=None):
             f"if [ -f {directory_arg}/Makefile ]; then "
             f"make -C {directory_arg} distclean; fi\n"
         )
+    if project and Path(project).name == "mruby":
+        source = source.replace("mkdir LPM &&", "mkdir -p LPM &&")
+        source = re.sub(r"\bninja(?=\))", 'ninja -j"${CMAKE_BUILD_PARALLEL_LEVEL:-4}"', source)
+    if project and Path(project).name == "miniz":
+        clean = "rm -rf " + shlex.quote(str(Path(project) / "build")) + "\n"
+        if clean not in source:
+            prefix += clean
+    if project and Path(project).name == "mupdf":
+        source = source.replace(
+            "mv $SRC/{*.zip,*.dict,*.options} $OUT",
+            "cp $SRC/{*.zip,*.dict,*.options} $OUT",
+        )
+        source = re.sub(
+            r"(?m)^mv (\$SRC|/src)/\*\.zip (\$SRC|/src)/\*\.dict (\$SRC|/src)/\*\.options (\$OUT|/out)[ \t]*$",
+            lambda match: "cp" + match.group(0)[2:], source,
+        )
+    if project and Path(project).name == "openvswitch":
+        clean = "if [ -f Makefile ]; then make distclean; fi\n"
+        if clean not in source:
+            prefix += clean
+        source = re.sub(
+            r"(?m)^wget -O (\$OUT|/out)/json\.dict https://raw\.githubusercontent\.com/rc0r/afl-fuzz/master/dictionaries/json\.dict[ \t]*$",
+            lambda match: "cp /opt/svb/offline-assets/openvswitch-json.dict " + match.group(1) + "/json.dict",
+            source,
+        )
     lines = source.splitlines(keepends=True)
     position = 1 if lines and lines[0].startswith("#!") else 0
     command = "cd " + shlex.quote(directory) + "\n"

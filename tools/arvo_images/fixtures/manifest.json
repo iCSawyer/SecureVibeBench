@@ -1,0 +1,20 @@
+{
+  "assets": [
+    {
+      "filename": "mupdf-sample.pdf",
+      "url": "https://ontheline.trincoll.edu/images/bookdown/sample-local-pdf.pdf",
+      "sha256": "40c5b733d0e21c53a9e40fa6eb9df01bb6898b842f5f13bd42db5624c2a97dd0",
+      "bytes": 49672,
+      "recovered_from_image": "sha256:f4ae5d69203624840fdfb19fc584aa80aa6123a40907bbae350f77d152ab70c7",
+      "image_path": "/src/mupdf/sample-local-pdf.pdf"
+    },
+    {
+      "filename": "openvswitch-json.dict",
+      "url": "https://raw.githubusercontent.com/rc0r/afl-fuzz/master/dictionaries/json.dict",
+      "sha256": "238d991798c4171abc995b14bcda2d4d0876d605b403a9fe00453b726fe619ef",
+      "bytes": 416,
+      "recovered_from_image": "sha256:d2e5856ac68096adf1e521870ae69faf17c5690606e87d4743a5327e7ab464a3",
+      "image_path": "/out/json.dict"
+    }
+  ]
+}

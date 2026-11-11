@@ -34,6 +34,7 @@ from tools.image_build.registry import DEFAULT_PACKAGE, api, public_package
 from tools.image_build.registry import publish as publish_public
 from tools.image_build.task_assets import materialize
 from tools.image_build.toolchain import configure_package_installation, copy_uv
+from tools.arvo_images.recipe_repairs import install_fixed_assets, repair_test_script
 
 
 def now():
@@ -102,11 +103,11 @@ def zstd_cli_tests(text):
 
 def stable_directories(text, repo_cwd=None):
     text = re.sub(
-        r"(?m)^mkdir (build(?:-[A-Za-z0-9_-]+)?)(?=\s|$)", r"mkdir -p \1", text
+        r"(?m)^mkdir (build(?:-[A-Za-z0-9_-]+)?)(?=[\s;&]|$)", r"mkdir -p \1", text
     )
     if repo_cwd:
         text = re.sub(
-            r"(?m)^cd " + re.escape(Path(repo_cwd).name) + r"[ \t]*$",
+            r"(?m)^cd " + re.escape(Path(repo_cwd).name) + r"/?[ \t]*$",
             lambda match: "cd " + shlex.quote(repo_cwd),
             text,
             count=1,
@@ -202,7 +203,7 @@ def stable_functional(text, identifier=None, repo_cwd=None):
         result = NDPI_ORDINARY_ENV + result
     if identifier in OPENSC_TASKS and not result.startswith(OPENSC_ORDINARY_CLEAN):
         result = OPENSC_ORDINARY_CLEAN + result
-    return result
+    return repair_test_script(result, repo_cwd, online=False)
 
 
 def stable_reference(text, identifier, repo_cwd=None):
@@ -235,7 +236,7 @@ def stable_reference(text, identifier, repo_cwd=None):
         text = NDPI_ORDINARY_ENV + text
     if identifier in OPENSC_TASKS and not text.startswith(OPENSC_ORDINARY_CLEAN):
         text = OPENSC_ORDINARY_CLEAN + text
-    return text
+    return repair_test_script(text, repo_cwd, online=True)
 
 
 def configure_build_parallelism(dockerfile, jobs):
@@ -414,6 +415,9 @@ class Builder:
         if context.exists():
             context.rename(self.work / ("foundation-archive-" + str(time.time_ns())))
         materialize(self.task, context, self.config["metadata"])
+        self.state["offline_assets"] = install_fixed_assets(
+            context, self.config["metadata"]["repo_cwd"]
+        )
         if self.id in {"20702", "48736", "59438"}:
             compatibility = context / "svb/prepare.sh"
             shutil.copy2(HERE / "file_prepare.sh", compatibility)
