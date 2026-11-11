@@ -14,8 +14,9 @@
 
 
 > [!IMPORTANT]
-> **SecureVibeBench is now v0.2!** Just try `pip install -U securevibebench`!
-> We are updating to new harbor-native evaluation and precompiled images, so **recent results may be unstable and differ from v0.1**.
+> **SecureVibeBench is now v0.2!** Just try `pip install -U securevibebench`! 
+> 
+> We are updating to new harbor-native evaluation and precompiled images, and we will release them once they are fully prepared. 
 > Please report any usage issues you encounter via Issues or my [email](mailto:junkaichen@smu.edu.sg), and we will investigate and fix as soon as possible. 🙏
 
 <p align="left">
