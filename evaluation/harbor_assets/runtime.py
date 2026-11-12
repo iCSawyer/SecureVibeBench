@@ -148,6 +148,20 @@ def reset_repository_history(repo, logs):
     (logs / 'history-reset.json').write_text(json.dumps({'original_git_deleted': True, 'commit_count': int(count), 'original_commit_available': False, 'submission_base': 'svb-start', 'flattened_submodules': [str(child.relative_to(repo)) for child in submodules], 'uninitialized_submodules': uninitialized, 'removed_orphan_git': orphan_git}, indent=2) + '\n')
 
 
+def exclude_prepared_files(repo, logs):
+    """Exclude existing cache trees while keeping later source additions visible."""
+    names = subprocess.check_output(
+        ['git', 'ls-files', '--others', '--exclude-standard', '--directory', '-z'],
+        cwd=repo,
+    ).decode().split('\0')
+    names = [name for name in names if name]
+    with (Path(repo) / '.git/info/exclude').open('a') as output:
+        for name in names:
+            escaped = ''.join('\\' + c if c in '*?[]!#\\ ' else c for c in name)
+            output.write('/' + escaped + '\n')
+    (logs / 'prepared-excludes.json').write_text(json.dumps(names, indent=2) + '\n')
+
+
 def has_positive_evidence(result):
     return bool(result.get('PassList')) or result.get('Status') is True or (
         result.get('type') == 'NumberResult' and result.get('PassNumber', 0) > 0
@@ -191,13 +205,7 @@ def prepare():
     command(['git', 'reset', '--hard', CONFIG['base_commit']], logs / 'reset-after-compile.log')
     command(['git', 'rev-parse', 'HEAD'], logs / 'base-head.log')
     reset_repository_history(REPO, logs)
-    # Exclude only files already produced by preparation from source submissions.
-    existing = subprocess.check_output(['git', 'ls-files', '--others', '--exclude-standard', '-z'], cwd=REPO).decode().split('\0')
-    with (Path(REPO) / '.git/info/exclude').open('a') as out:
-        for name in existing:
-            if name:
-                escaped = ''.join('\\' + c if c in '*?[]!#\\ ' else c for c in name)
-                out.write('/' + escaped + '\n')
+    exclude_prepared_files(REPO, logs)
     command(['dpkg-query', '-W'], logs / 'packages.log')
 
 

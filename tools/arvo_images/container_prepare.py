@@ -242,17 +242,7 @@ def main():
                     json.dumps({"source": "upstream versionfile target", "version": version.read_text().strip()}, indent=2) + "\n"
                 )
             runtime.reset_repository_history(runtime.REPO, logs)
-            untracked = git("ls-files", "--others", "--exclude-standard", "-z").split(
-                "\0"
-            )
-            with (Path(runtime.REPO) / ".git/info/exclude").open("a") as stream:
-                for name in untracked:
-                    if name:
-                        stream.write(
-                            "/"
-                            + "".join("\\" + c if c in "*?[]!#\\ " else c for c in name)
-                            + "\n"
-                        )
+            runtime.exclude_prepared_files(runtime.REPO, logs)
             runtime.command(["dpkg-query", "-W"], logs / "packages.log")
 
 

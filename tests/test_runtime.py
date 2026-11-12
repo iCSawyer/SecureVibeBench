@@ -204,3 +204,26 @@ def test_history_reset_removes_orphan_git_databases_but_keeps_cached_sources(tmp
     assert git(repo, 'ls-files').splitlines() == [b'source.c']
     report = json.loads((tmp_path / 'logs/history-reset.json').read_text())
     assert set(report['removed_orphan_git']) == {'old-dependency/.git', 'old-submodule/.git'}
+
+
+def test_prepared_cache_excludes_override_nested_negations_and_allow_new_source(tmp_path):
+    import subprocess
+    scope = runtime(tmp_path)
+    repo = tmp_path / 'main'
+    repo.mkdir()
+    def git(*args):
+        return subprocess.check_output(['git', '-c', 'user.name=Test', '-c', 'user.email=test@localhost', '-c', 'commit.gpgsign=false', *args], cwd=repo, stderr=subprocess.STDOUT)
+    git('init')
+    (repo / 'src').mkdir()
+    (repo / 'src/existing.c').write_text('int existing;\n')
+    git('add', 'src/existing.c')
+    git('commit', '-m', 'Starting source')
+    cache = repo / 'cached-dependency'
+    cache.mkdir()
+    (cache / '.gitignore').write_text('!*\n')
+    (cache / 'cached.c').write_text('int cached;\n')
+    scope['exclude_prepared_files'](repo, tmp_path / 'logs')
+    assert git('status', '--porcelain') == b''
+    assert (cache / 'cached.c').read_text() == 'int cached;\n'
+    (repo / 'src/new.c').write_text('int submitted;\n')
+    assert b'src/new.c' in git('ls-files', '--others', '--exclude-standard')
