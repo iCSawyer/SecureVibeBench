@@ -65,6 +65,8 @@ def repair_test_script(text, repo_cwd, *, online, identifier=None):
             text = text.replace('mkdir -p build', prepare + 'mkdir -p build', 1)
     if project == 'binutils-gdb':
         text = text.replace('then make distclean; fi', 'then make -j1 distclean; fi')
+        if online:
+            text = re.sub(r'(?m)^([ \t]*python3)[ \t]*$', r'\1 libgmp-dev libmpfr-dev', text, count=1)
     if project == 'ghostpdl':
         ordinary = 'if [ -f Makefile ]; then make -j1 distclean; fi\nunset CC CXX CFLAGS CXXFLAGS CPPFLAGS LDFLAGS\nexport CC=gcc CXX=g++\n'
         if ordinary not in text:

@@ -16,6 +16,8 @@
 
 ## Unreleased (`habour` branch)
 
+- Install GMP and MPFR development headers during binutils/GDB preparation so the fixed-source GDB build can configure offline.
+
 - Pin libavc GoogleTest and disable remote dependency updates during tests. Preserve igraph version metadata before removing Git history.
 - Remove obsolete submodule Git databases while keeping cached sources. Serialize binutils cleanup and preserve the original optional Wireshark fuzz dependency set.
 
