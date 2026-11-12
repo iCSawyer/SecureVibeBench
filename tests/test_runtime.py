@@ -173,3 +173,34 @@ def test_command_timeout_stops_background_compilers(tmp_path):
                 os.kill(child, signal.SIGKILL)
             except ProcessLookupError:
                 pass
+
+
+def test_history_reset_removes_orphan_git_databases_but_keeps_cached_sources(tmp_path):
+    import json
+    import subprocess
+    scope = runtime(tmp_path)
+    repo = tmp_path / 'main'
+    repo.mkdir()
+    def git(cwd, *args):
+        return subprocess.check_output(['git', '-c', 'user.name=Test', '-c', 'user.email=test@localhost', '-c', 'commit.gpgsign=false', *args], cwd=cwd, stderr=subprocess.STDOUT)
+    git(repo, 'init')
+    (repo / 'source.c').write_text('int start;\n')
+    git(repo, 'add', 'source.c')
+    git(repo, 'commit', '-m', 'Original source')
+    orphan = repo / 'old-dependency'
+    orphan.mkdir()
+    git(orphan, 'init')
+    (orphan / 'cached.c').write_text('int cached;\n')
+    git(orphan, 'add', '.')
+    git(orphan, 'commit', '-m', 'Original cached history')
+    reference = repo / 'old-submodule'
+    reference.mkdir()
+    (reference / '.git').write_text('gitdir: ../.git/modules/missing\n')
+    scope['reset_repository_history'](repo, tmp_path / 'logs')
+    assert not (orphan / '.git').exists()
+    assert not (reference / '.git').exists()
+    assert (orphan / 'cached.c').read_text() == 'int cached;\n'
+    assert git(repo, 'rev-list', '--all', '--count').strip() == b'1'
+    assert git(repo, 'ls-files').splitlines() == [b'source.c']
+    report = json.loads((tmp_path / 'logs/history-reset.json').read_text())
+    assert set(report['removed_orphan_git']) == {'old-dependency/.git', 'old-submodule/.git'}

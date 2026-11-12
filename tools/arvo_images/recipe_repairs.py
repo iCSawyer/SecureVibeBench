@@ -60,9 +60,11 @@ def repair_test_script(text, repo_cwd, *, online, identifier=None):
     if project in {'binutils-gdb', 'igraph'}:
         prepare = 'rm -rf build\n'
         if project == 'binutils-gdb':
-            prepare = 'if [ -f Makefile ]; then make distclean; fi\nif [ -f zlib/Makefile ]; then make -C zlib -j1 distclean; fi\nunset CC CXX CFLAGS CXXFLAGS CPPFLAGS LDFLAGS\nexport CC=gcc CXX=g++\n' + prepare
+            prepare = 'if [ -f Makefile ]; then make -j1 distclean; fi\nif [ -f zlib/Makefile ]; then make -C zlib -j1 distclean; fi\nunset CC CXX CFLAGS CXXFLAGS CPPFLAGS LDFLAGS\nexport CC=gcc CXX=g++\n' + prepare
         if prepare not in text:
             text = text.replace('mkdir -p build', prepare + 'mkdir -p build', 1)
+    if project == 'binutils-gdb':
+        text = text.replace('then make distclean; fi', 'then make -j1 distclean; fi')
     if project == 'ghostpdl':
         ordinary = 'if [ -f Makefile ]; then make -j1 distclean; fi\nunset CC CXX CFLAGS CXXFLAGS CPPFLAGS LDFLAGS\nexport CC=gcc CXX=g++\n'
         if ordinary not in text:
@@ -80,6 +82,8 @@ def repair_test_script(text, repo_cwd, *, online, identifier=None):
         if clean not in text:
             text = text.replace('./configure', clean + './configure', 1)
     if project == 'libavc':
+        if '-DCMAKE_PROJECT_libavc_INCLUDE=' not in text:
+            text = text.replace('-DENABLE_TESTS=ON', '-DENABLE_TESTS=ON ' + chr(92) + '\n  -DCMAKE_PROJECT_libavc_INCLUDE=/opt/svb/libavc_dependencies.cmake', 1)
         text = re.sub(r'(?m)^ln -sf /usr/local/lib/clang/[^\n]+libclang_rt\.fuzzer-x86_64\.a \\\n[ \t]+/usr/lib/libFuzzingEngine\.a\n', '', text)
         text = text.replace('wget https://storage.googleapis.com/android_media/external/libavc/tests/AvcTestRes-1.0.zip', 'cp /opt/svb/offline-assets/AvcTestRes-1.0.zip AvcTestRes-1.0.zip')
     if project == 'libjxl' and not online:

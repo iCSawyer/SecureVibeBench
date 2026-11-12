@@ -16,6 +16,9 @@
 
 ## Unreleased (`habour` branch)
 
+- Pin libavc GoogleTest and disable remote dependency updates during tests. Preserve igraph version metadata before removing Git history.
+- Remove obsolete submodule Git databases while keeping cached sources. Serialize binutils cleanup and preserve the original optional Wireshark fuzz dependency set.
+
 - Separate MRuby host code generation from its instrumented target build. Cap bare CMake, Ninja, and Hermes lit parallelism.
 - Clean generated build caches when ordinary and fuzz toolchains differ. Serialize CUPS build/install goals and retain real GhostPDL smoke-test failures.
 - Cache fixed libavc and igraph inputs with SHA-256 checks. Report every upstream file test fixture, including failures after the aggregate test stops.

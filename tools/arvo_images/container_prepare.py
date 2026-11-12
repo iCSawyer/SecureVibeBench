@@ -100,7 +100,7 @@ def stable_arvo_build(source, directory, project=None, identifier=None):
         if "-DCMAKE_DISABLE_FIND_PACKAGE_JPEG=ON" not in source:
             source = source.replace("build_args=(", "build_args=(\n  -DCMAKE_DISABLE_FIND_PACKAGE_JPEG=ON", 1)
     if project and Path(project).name == "wireshark":
-        source = source.replace('CMAKE_DEFINES="-DBUILD_fuzzshark=ON"', 'CMAKE_DEFINES="-DBUILD_fuzzshark=ON -DENABLE_KERBEROS=OFF"')
+        source = source.replace('CMAKE_DEFINES="-DBUILD_fuzzshark=ON"', 'CMAKE_DEFINES="-DBUILD_fuzzshark=ON -DENABLE_KERBEROS=OFF -DENABLE_BROTLI=OFF -DENABLE_LIBXML2=OFF"')
         cleanup = 'rm -rf "$WIRESHARK_BUILD_PATH"\nmkdir -p "$WIRESHARK_BUILD_PATH"'
         if cleanup not in source:
             source = source.replace('mkdir -p "$WIRESHARK_BUILD_PATH"', cleanup)
@@ -158,6 +158,18 @@ def main():
         # Keep history only in the private preparation stage, for offline gold checkout.
         runtime.reset_repository_history = lambda *values: None
         prepare_online(runtime, logs)
+        if str(metadata["localid"]) == "65418":
+            lock = Path("/opt/svb/libavc_dependencies.cmake").read_text()
+            expected = re.search(r"GIT_TAG ([0-9a-f]{40})", lock).group(1)
+            actual = subprocess.check_output(
+                ["git", "-C", "/src/libavc/third_party/googletest", "rev-parse", "HEAD"],
+                text=True,
+            ).strip()
+            if actual != expected:
+                raise RuntimeError("GoogleTest source differs from the dependency lock")
+            (logs / "googletest-lock.json").write_text(
+                json.dumps({"commit": actual, "source": "https://android.googlesource.com/platform/external/googletest", "updates_disconnected": True}, indent=2) + "\n"
+            )
     else:
         runtime.network_probe(logs / "network.json")
         if args.phase in ("gold", "start"):
@@ -219,6 +231,16 @@ def main():
                 ["git", "reset", "--hard", metadata["base_commit"]],
                 logs / "reset-after-compile.log",
             )
+            if metadata["repo_cwd"] == "/src/igraph":
+                runtime.command(
+                    ["cmake", "--build", "build", "--target", "versionfile"],
+                    logs / "versionfile.log",
+                )
+                version = Path(runtime.REPO) / "build/IGRAPH_VERSION"
+                shutil.copy2(version, Path(runtime.REPO) / "IGRAPH_VERSION")
+                (logs / "versionfile.json").write_text(
+                    json.dumps({"source": "upstream versionfile target", "version": version.read_text().strip()}, indent=2) + "\n"
+                )
             runtime.reset_repository_history(runtime.REPO, logs)
             untracked = git("ls-files", "--others", "--exclude-standard", "-z").split(
                 "\0"

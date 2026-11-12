@@ -110,6 +110,22 @@ def reset_repository_history(repo, logs):
             marker.unlink()
         else:
             shutil.rmtree(marker)
+    # Old checkouts can leave submodules that are absent from the current index.
+    # Remove their Git databases as well; keep downloaded source files.
+    orphan_git = []
+    for directory, directories, filenames in os.walk(repo, followlinks=False):
+        if '.git' in directories:
+            directories.remove('.git')
+        if Path(directory) == repo:
+            continue
+        marker = Path(directory) / '.git'
+        if marker.is_symlink() or marker.is_file():
+            marker.unlink()
+        elif marker.is_dir():
+            shutil.rmtree(marker)
+        else:
+            continue
+        orphan_git.append(str(marker.relative_to(repo)))
     original_head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=repo, text=True).strip()
     git_dir = repo / '.git'
     if not git_dir.is_dir() or git_dir.is_symlink():
@@ -129,7 +145,7 @@ def reset_repository_history(repo, logs):
     old = subprocess.run(['git', 'cat-file', '-e', original_head], cwd=repo, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     if count != '1' or old.returncode == 0:
         raise RuntimeError('Original Git history was not removed')
-    (logs / 'history-reset.json').write_text(json.dumps({'original_git_deleted': True, 'commit_count': int(count), 'original_commit_available': False, 'submission_base': 'svb-start', 'flattened_submodules': [str(child.relative_to(repo)) for child in submodules], 'uninitialized_submodules': uninitialized}, indent=2) + '\n')
+    (logs / 'history-reset.json').write_text(json.dumps({'original_git_deleted': True, 'commit_count': int(count), 'original_commit_available': False, 'submission_base': 'svb-start', 'flattened_submodules': [str(child.relative_to(repo)) for child in submodules], 'uninitialized_submodules': uninitialized, 'removed_orphan_git': orphan_git}, indent=2) + '\n')
 
 
 def has_positive_evidence(result):

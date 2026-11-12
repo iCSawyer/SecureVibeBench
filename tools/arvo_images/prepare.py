@@ -415,6 +415,8 @@ class Builder:
         if context.exists():
             context.rename(self.work / ("foundation-archive-" + str(time.time_ns())))
         materialize(self.task, context, self.config["metadata"])
+        if self.id == "65418":
+            shutil.copy2(HERE / "libavc_dependencies.cmake", context / "svb/libavc_dependencies.cmake")
         if self.id == "25815":
             task_json = context / "svb/task.json"
             settings = json.loads(task_json.read_text())

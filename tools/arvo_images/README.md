@@ -166,3 +166,7 @@ Task 38843 builds its host `mrbc` compiler from the current candidate source wit
 Task 20702 runs `make check` and each fixture through the original `tests/test` driver. The report retains aggregate and individual failures. Acceptance compares the reference pass set with the submitted pass set.
 
 Pinned libavc and igraph archives are fetched only by the online producer and copied into the image after SHA-256 verification. Offline commands use those files. CUPS libraries finish building before installation starts. Hermes compilation has a 7200-second limit; its compiler and lit job counts follow the image CPU budget.
+
+GoogleTest for task 65418 uses commit `cbeab5d01811d23ea488efc07f2c31f7c53024e2`. A CMake project hook pins the existing upstream ExternalProject and disables remote updates. Online preparation verifies the checkout against this lock. It retains the upstream tests and assertions.
+
+Before deleting igraph history, the producer runs the upstream `versionfile` target and retains `IGRAPH_VERSION` for later builds. History removal also clears Git databases left by obsolete submodule paths. Cached dependency source files remain available. The audit still requires one task commit and a clean task worktree.

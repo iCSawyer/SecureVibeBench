@@ -103,3 +103,20 @@ def test_binutils_generated_fuzz_header_is_replaced_on_each_build(tmp_path):
     for _ in range(2):
         subprocess.run(['bash', '-eu', '-c', script], check=True, capture_output=True)
     assert (tmp_path / 'readelf.h').read_text().count('old_main') == 1
+
+
+def test_binutils_cleanup_serializes_recursive_make_before_removing_makefile(tmp_path):
+    makefile = tmp_path / 'Makefile'
+    makefile.write_text('.PHONY: distclean do-distclean local-distclean distclean-host\ndistclean: do-distclean local-distclean\ndo-distclean:\n\tsleep 0.1\n\t$(MAKE) distclean-host\ndistclean-host:\n\ttouch cleaned\nlocal-distclean:\n\trm Makefile\n')
+    script = recipe_repairs.repair_test_script('if [ -f Makefile ]; then make distclean; fi\n', '/src/binutils-gdb', online=False)
+    subprocess.run(['bash', '-eu', '-c', script], cwd=tmp_path, env={**os.environ, 'MAKEFLAGS': '-j8'}, check=True, capture_output=True)
+    assert (tmp_path / 'cleaned').exists()
+
+
+def test_libavc_project_hook_pins_external_source_and_disables_remote_updates(tmp_path):
+    if not shutil.which('cmake'):
+        pytest.skip('CMake is required')
+    hook = Path(__file__).parents[1] / 'tools/arvo_images/libavc_dependencies.cmake'
+    (tmp_path / 'CMakeLists.txt').write_text('cmake_minimum_required(VERSION 3.12)\nproject(libavc NONE)\ninclude(ExternalProject)\nExternalProject_Add(googletest GIT_REPOSITORY https://example.invalid/not-used GIT_TAG main)\nget_property(tag TARGET googletest PROPERTY _EP_GIT_TAG)\nget_property(disconnected TARGET googletest PROPERTY _EP_UPDATE_DISCONNECTED)\nfile(WRITE "${CMAKE_BINARY_DIR}/lock.txt" "${tag}\\n${disconnected}")\n')
+    subprocess.run(['cmake', '-S', str(tmp_path), '-B', str(tmp_path / 'build'), '-DCMAKE_PROJECT_libavc_INCLUDE=' + str(hook)], check=True, capture_output=True)
+    assert (tmp_path / 'build/lock.txt').read_text().splitlines() == ['cbeab5d01811d23ea488efc07f2c31f7c53024e2', 'TRUE']
