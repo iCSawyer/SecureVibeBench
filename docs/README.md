@@ -1,6 +1,6 @@
 # Image-based native Harbor evaluation
 
-This workflow is experimental on the `habour` branch. It uses prepared images for every trial. The pinned HF task release currently covers 100 tasks; this is a subset of the 105-task benchmark. `full` means all tasks in the selected image catalog. No HF or GitHub publication is performed by these commands.
+This workflow is experimental on the `habour` branch. It uses prepared images for every trial. The pinned HF task release currently covers 104 tasks; this is a subset of the 105-task benchmark. `full` means all tasks in the selected image catalog. No HF or GitHub publication is performed by these commands.
 
 ## 1. Environment installation
 
@@ -16,7 +16,7 @@ Use `pip install -e .` when working from the checkout: edits to Python source ta
 
 ### Task availability
 
-`securevibebench list` shows the complete 105-task inventory: 100 tasks have prepared image digests and 5 are temporarily unsupported. Use `--json` for structured status. `--task full` selects only supported tasks. Selecting an unsupported task fails before any pull or trial. HF `full-habour` contains only runnable tasks under `data/`; `availability.json` records all task statuses.
+`securevibebench list` shows the complete 105-task inventory: 104 tasks have prepared image digests and 1 are temporarily unsupported. Use `--json` for structured status. `--task full` selects only supported tasks. Selecting an unsupported task fails before any pull or trial. HF `full-habour` contains only runnable tasks under `data/`; `availability.json` records all task statuses.
 
 ### Image access and offline runs
 
