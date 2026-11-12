@@ -16,7 +16,7 @@
 
 
 > [!NOTE]
-> The `habour` branch is experimental. Its prepared image catalog currently covers 89 tasks. Other benchmark tasks need prepared images before they can use this workflow. Use this checkout; this work has not been formally released.
+> The `habour` branch is experimental. Its prepared image catalog currently covers 100 tasks. Other benchmark tasks need prepared images before they can use this workflow. Use this checkout; this work has not been formally released.
 
 <p align="left">
     ✨&nbsp;<a href="#nav-news">News</a>
@@ -53,7 +53,7 @@ pip install -e .
 
 This editable install uses the local source code. Use `pip install .` for a regular install. uv is optional: `uv sync --locked`.
 
-Installation downloads and verifies the pinned HF `full-habour` task release and caches it locally. Regular wheels also include this snapshot, so task data remains available without HF access. It currently supports 89 tasks; 16 are temporarily unsupported. The GHCR images are public; no GitHub login or package token is required. See [offline runs](docs/README.md#image-access-and-offline-runs).
+Installation downloads and verifies the pinned HF `full-habour` task release and caches it locally. Regular wheels also include this snapshot, so task data remains available without HF access. It currently supports 100 tasks; 5 are temporarily unsupported. The GHCR images are public; no GitHub login or package token is required. See [offline runs](docs/README.md#image-access-and-offline-runs).
 
 ### 2. Generate a submission with mini-swe-agent
 
