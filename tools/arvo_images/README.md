@@ -38,7 +38,7 @@ securevibebench pull --tasks data --task full
 securevibebench generate --tasks data --task ID --model 'openai/<model>' --local-images --eval
 ```
 
-The exporter records each registry digest, expected image ID, platform, baseline hash, and verified native agent. Publish those definitions and the image catalog to HF `full-habour`; do not put the complete dataset in GitHub. Update `evaluation/dataset-lock.json` after verifying the HF commit. The current HF release contains 104 image tasks. The wrapper only accepts declared image tasks and never falls back to a Dockerfile.
+The exporter records each registry digest, expected image ID, platform, baseline hash, and verified native agent. Publish those definitions and the image catalog to HF `full-habour`; do not put the complete dataset in GitHub. Update `evaluation/dataset-lock.json` after verifying the HF commit. The current HF release contains 105 image tasks. The wrapper only accepts declared image tasks and never falls back to a Dockerfile.
 
 Published offline bundles from earlier batches retain their own framework wheel and importer. Use those frozen bundles as complete archives. The current evaluator consumes the minimal image task format; export a new task root when using an earlier distribution with the current package.
 
