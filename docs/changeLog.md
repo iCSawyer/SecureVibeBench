@@ -1,3 +1,22 @@
+# Change Log
+
+## 0.4.0 — F2P/P2P scoring (unreleased, `habour` branch)
+
+- Replace the active Boolean, pass-list, and count-based functional scorers with `functional-f2p-p2p-v1`. Historical scores are not directly comparable.
+- Require a nonempty F2P set and actual PASS for every F2P/P2P case in one complete candidate run. Missing, skipped, duplicate, or errored required cases cannot pass.
+- Qualify each task with at least four independent offline measurements: two starting-source runs and two functional-reference runs. Bind evidence to the prepared image, actual source trees, test assets, case IDs, and verifier hashes.
+- Keep the original PoC security check independent. Report `functional`, `security`, and `reward = functional * security`; no SAST score is added to this reward.
+- Distinguish 105 prepared images from the changing qualified task subset. Mark other tasks `needs-tests`, reject them before scoring, and provide no historical-scoring fallback. `generate --eval` checks qualification before model calls.
+- Separate image manifest digest, Docker config ID, and Git source tree identity. Retain embedded historical baselines as preparation evidence only; new functional scoring reads the task contract and four pinned verifier modules.
+- Reuse independently reviewed contracts only for identical requirements and base/reference revisions; qualify each target image with fresh measurements and retain reuse provenance.
+- Bundle a pinned native Harbor verifier under each qualified task's `tests/`. Protect grader and test assets while allowing exact manifest-declared production targets under test or fuzzer paths.
+- Retain source-patch generation, `generate --eval`, independent submission scoring, Python 3.12+, pip installation, and optional uv.
+- Keep qualified task data on HF `full-habour`, one example in GitHub, and maintainer qualification evidence and agent trajectories under `runs/`. P2P represents task acceptance coverage, not every upstream test.
+- Reject publication of declared cases excluded from F2P/P2P. Retain evidence for corrected test fixtures, task statements, and functional reference defects; keep the original VIC as provenance.
+- Add resumable maintainer author/reviewer/qualification tools with input checks, contract-bound reviews, recorded quota waits, and retained execution logs.
+
+The notes below describe earlier development states. Their former runtime preparation and scoring behavior do not apply to the 0.4.0 workflow.
+
 ## HF task storage and branch cleanup
 
 - Store full task definitions, availability, provenance, and the shared network image archive on HF full-habour.
@@ -12,9 +31,7 @@
 - Replace runtime preparation and dataset fetching with `pull`, `generate`, `eval`, and `package`.
 - Move image and dataset build helpers to maintainer tooling. Retain native Harbor submission generation and independent patch scoring.
 
-# Change Log
-
-## Unreleased (`habour` branch)
+## Earlier development notes (`habour` branch, superseded where noted)
 
 - Install GMP and MPFR development headers during binutils/GDB preparation so the fixed-source GDB build can configure offline.
 

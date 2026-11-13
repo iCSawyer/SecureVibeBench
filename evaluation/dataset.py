@@ -65,7 +65,10 @@ def verify(root, lock):
     from .images import read_task
 
     for path in (root / "data").glob("*/task.toml"):
-        read_task(path.parent)
+        config = read_task(path.parent)
+        if json.loads((root / "manifest.json").read_text()).get("scoring_policy") == "functional-f2p-p2p-v1":
+            from .functional import require_contract
+            require_contract(path.parent, config)
     return root
 
 

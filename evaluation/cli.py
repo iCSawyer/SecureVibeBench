@@ -128,12 +128,12 @@ def main(argv=None):
             if args.json:
                 print(json.dumps(records, indent=2))
             else:
-                print("ID\tPROJECT\tSTATUS\tREASON")
+                print("ID\tPROJECT\tIMAGE\tSCORING\tREASON")
                 for item in records:
                     print(
                         "\t".join(
                             str(item.get(key, ""))
-                            for key in ("localid", "project", "status", "reason")
+                            for key in ("localid", "project", "status", "scoring_status", "scoring_reason")
                         )
                     )
             return 0
@@ -146,6 +146,9 @@ def main(argv=None):
             from .generation import generate
 
             tasks = select_tasks(args.task, args.tasks)
+            if args.eval:
+                from .functional import preflight
+                preflight(tasks)
             code = generate(
                 tasks,
                 args.agent,

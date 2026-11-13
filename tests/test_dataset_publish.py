@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import pytest
 from securevibebench_evaluation.harbor_native import write_config
 from securevibebench_evaluation.images import read_task
+from securevibebench_evaluation.functional import task_fingerprint
 
 
 def publisher():
@@ -20,7 +21,7 @@ def publisher():
 
 
 @pytest.fixture
-def staged(tmp_path):
+def staged(tmp_path, qualified_task):
     module = publisher()
     source = tmp_path / 'source'
     all_tasks = tmp_path / 'all'
@@ -33,6 +34,7 @@ def staged(tmp_path):
         config['task']['name'] = 'securevibebench/' + name
         config['metadata']['localid'] = identifier
         write_config(source / name / 'task.toml', config)
+        qualified_task(source / name)
         shutil.copytree(source / name, all_tasks / name)
     unavailable = all_tasks / 'securevibebench-999'
     unavailable.mkdir()
@@ -92,6 +94,8 @@ def test_update_changes_only_dataset_artifacts(staged, monkeypatch):
     result = module.publish(output, 'previous')
     assert result['revision'] == 'next' and result['task_count'] == 2
     assert result['unsupported_task_count'] == 1
+    assert result['task_fingerprints'] == {path.name: task_fingerprint(path)
+                                           for path in (output / 'data').iterdir()}
 
 
 def test_update_rejects_changed_remote_head(staged, monkeypatch):
@@ -111,3 +115,42 @@ def test_archive_cannot_include_unsupported_tasks(staged):
         archive.addfile(member, io.BytesIO(content))
     with pytest.raises(ValueError, match='archive file set'):
         module.verify_stage(output)
+
+
+def test_ready_image_without_qualified_tests_stays_unsupported(staged, tmp_path):
+    module, existing = staged
+    source = existing / 'data'
+    shutil.rmtree(source / 'securevibebench-32345')
+    output = tmp_path / 'unqualified-stage'
+    module.stage(source, tmp_path / 'all', tmp_path / 'catalog.json', output)
+    manifest = module.verify_stage(output)
+    assert manifest['task_count'] == 1
+    assert manifest['prepared_image_count'] == 2
+    records = json.loads((output / 'availability.json').read_text())['tasks']
+    pending = next(item for item in records if item['localid'] == '32345')
+    assert pending['status'] == 'unsupported'
+    assert pending['scoring_status'] == 'needs-tests'
+    assert pending['image_ready']
+    assert not (output / 'data/securevibebench-32345').exists()
+
+
+def test_unqualified_source_blocks_staging_before_writing(staged, tmp_path):
+    module, existing = staged
+    source = existing / 'data'
+    (source / 'securevibebench-32345/tests/functional.json').unlink()
+    output = tmp_path / 'invalid-source-stage'
+    with pytest.raises(ValueError, match='needs F2P/P2P qualification'):
+        module.stage(source, tmp_path / 'all', tmp_path / 'catalog.json', output)
+    assert not output.exists()
+
+
+def test_export_rejects_unresolved_cases_even_if_exclusion_summary_is_missing(monkeypatch, tmp_path):
+    module = publisher()
+    contract = {'cases': [{'id': 'feature'}, {'id': 'regression'}, {'id': 'unresolved'}],
+                'FAIL_TO_PASS': ['feature'], 'PASS_TO_PASS': ['regression'],
+                'qualification': {}}
+    monkeypatch.setattr(module, 'require_contract', lambda *args: contract)
+    with pytest.raises(ValueError, match='excluded functional cases'):
+        module.require_export_contract(tmp_path / 'securevibebench-1')
+    contract['PASS_TO_PASS'].append('unresolved')
+    assert module.require_export_contract(tmp_path / 'securevibebench-1') is contract

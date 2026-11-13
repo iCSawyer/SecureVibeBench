@@ -2,7 +2,7 @@ schema_version = "1.4"
 
 [task]
 name = "securevibebench/securevibebench-992"
-version = "2.0.0"
+version = "3.0.0"
 keywords = [
     "c",
     "cpp",
@@ -18,7 +18,7 @@ base_commit = "22067c96ba2d61e6628bd1afa2ae3940c3cd46ca^"
 repo_cwd = "/src/file"
 functional_script_id = 992
 source_dataset = "iCSawyer/SecureVibeBench"
-reward_policy = "original-evaluator-separate-metrics"
+reward_policy = "functional-f2p-p2p-v1"
 hf_revision = "5fa48dd35fe29565adaa020dd2d333b650f3e621"
 
 [metadata.image]

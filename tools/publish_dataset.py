@@ -18,6 +18,7 @@ from huggingface_hub import HfApi, CommitOperationAdd, CommitOperationDelete
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from securevibebench_evaluation.images import read_task
+from securevibebench_evaluation.functional import POLICY, require_contract, task_fingerprint
 
 REPO = "iCSawyer/SecureVibeBench"
 BRANCH = "full-habour"
@@ -47,6 +48,16 @@ def task_id(path):
     return match[1]
 
 
+def require_export_contract(task, config=None):
+    """Export only suites whose declared cases all have accepted obligations."""
+    spec = require_contract(task, config)
+    obligations = set(spec['FAIL_TO_PASS']) | set(spec['PASS_TO_PASS'])
+    declared = {case['id'] for case in spec['cases']}
+    if obligations != declared:
+        raise ValueError('Resolve excluded functional cases before publication: ' + task.name)
+    return spec
+
+
 def stage(source, all_tasks, catalog, output, framework=None):
     """Export only runnable image tasks; list all other IDs as unsupported."""
     if output.exists():
@@ -64,7 +75,7 @@ def stage(source, all_tasks, catalog, output, framework=None):
     ):
         raise ValueError("Invalid image catalog count")
     tasks = {task_id(path.parent): path.parent for path in source.glob("*/task.toml")}
-    if not tasks or tasks.keys() != entries.keys() or not tasks.keys() <= known.keys():
+    if not tasks or not tasks.keys() <= entries.keys() or not entries.keys() <= known.keys():
         raise ValueError(
             "Image catalog, source tasks, and benchmark inventory disagree"
         )
@@ -72,6 +83,7 @@ def stage(source, all_tasks, catalog, output, framework=None):
         if entries[identifier].get("visibility") != "public" or entries[identifier].get("anonymous_manifest_verified") is not True:
             raise ValueError("HF task requires verified anonymous Public image access: " + identifier)
         config = read_task(task)
+        require_export_contract(task, config)
         image = config["metadata"]["image"]
         if any(
             image[key] != entries[identifier][key]
@@ -80,10 +92,14 @@ def stage(source, all_tasks, catalog, output, framework=None):
             raise ValueError("Image contract differs from catalog: " + identifier)
     output.mkdir(parents=True)
     for task in tasks.values():
-        for name in TASK_FILES:
-            destination = output / "data" / task.name / name
+        files = [task / "instruction.md", task / "task.toml"]
+        files.extend(path for path in sorted((task / "tests").rglob("*")) if path.is_file())
+        for source_file in files:
+            if source_file.is_symlink():
+                raise ValueError("Dataset task assets must be regular files")
+            destination = output / "data" / task.name / source_file.relative_to(task)
             destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(task / name, destination)
+            shutil.copy2(source_file, destination)
     availability = {
         "schema_version": 1,
         "benchmark_task_count": len(known),
@@ -108,11 +124,15 @@ def stage(source, all_tasks, catalog, output, framework=None):
                 image_visibility=entries[identifier]["visibility"],
                 agents=image["agents"],
             )
+            row.update(scoring_status="qualified", scoring_policy=POLICY)
+        elif identifier in entries:
+            image = entries[identifier]
+            row.update(reason="missing_functional_qualification", scoring_status="needs-tests",
+                       image_ready=True, image_reference=image["reference"], image_id=image["id"],
+                       message="Prepared image available; F2P/P2P tests are not qualified yet.")
         else:
-            row.update(
-                reason="missing_prepared_image",
-                message="Temporarily unsupported: no published prepared image digest.",
-            )
+            row.update(reason="missing_prepared_image", scoring_status="needs-image",
+                       message="Temporarily unsupported: no published prepared image digest.")
         availability["tasks"].append(row)
     if framework is not None:
         record = json.loads((framework / "lock.json").read_text())
@@ -133,15 +153,17 @@ def stage(source, all_tasks, catalog, output, framework=None):
         if path.is_file()
     }
     manifest = {
-        "schema_version": 3,
-        "task_layout": "digest-image-v1",
+        "schema_version": 4,
+        "task_layout": "digest-image-f2p-p2p-v1",
+        "scoring_policy": POLICY,
+        "prepared_image_count": len(entries),
         "task_count": len(tasks),
         "benchmark_task_count": len(known),
         "unsupported_task_count": len(known) - len(tasks),
         "harbor_version": "0.25.0",
-        "minimum_package_version": "0.3.0",
+        "minimum_package_version": "0.4.0",
         "default_agent": "mini-swe-agent",
-        "image_visibility": "private",
+        "image_visibility": "public",
         "availability": "availability.json",
         "files_sha256": files,
     }
@@ -184,7 +206,7 @@ def verify_stage(output):
     if supported != runnable or len(supported) != manifest["task_count"]:
         raise ValueError("Availability does not match runnable tasks")
     for path in (output / "data").glob("*/task.toml"):
-        read_task(path.parent)
+        require_export_contract(path.parent, read_task(path.parent))
     expected_members = expected - {"tasks.tar.gz"}
     with tarfile.open(output / "tasks.tar.gz", "r:gz") as archive:
         members = archive.getmembers()
@@ -245,13 +267,16 @@ def publish(output, expected_head):
         revision=BRANCH,
         parent_commit=expected_head,
         operations=operations,
-        commit_message="Use prepared digest images; mark remaining tasks unsupported",
+        commit_message="Qualify F2P/P2P tests; distinguish prepared images from scorable tasks",
     )
     return {
         "repo_id": REPO,
         "branch": BRANCH,
         "revision": commit.oid,
         "task_count": manifest["task_count"],
+        "scoring_policy": POLICY,
+        "task_fingerprints": {path.parent.name: task_fingerprint(path.parent)
+                              for path in sorted((output / "data").glob("*/task.toml"))},
         "benchmark_task_count": manifest["benchmark_task_count"],
         "unsupported_task_count": manifest["unsupported_task_count"],
         "archive": {

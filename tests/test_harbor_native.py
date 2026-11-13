@@ -3,6 +3,8 @@ from pathlib import Path
 from types import SimpleNamespace
 import shutil
 import tomllib
+import shlex
+import subprocess
 
 import pytest
 
@@ -36,8 +38,9 @@ def no_docker_or_dns(monkeypatch):
     monkeypatch.setattr(submissions, 'acquire', lambda *args, **kwargs: None)
 
 
-def test_submission_staging_is_offline_and_does_not_modify_task(tmp_path):
+def test_submission_staging_is_offline_and_does_not_modify_task(tmp_path, qualified_task):
     task = prepared(tmp_path)
+    qualified_task(task)
     original = (task / 'task.toml').read_bytes()
     target = tmp_path / 'score/tasks'
     records = stage_submissions(submission(tmp_path), task.parent, target)
@@ -48,6 +51,29 @@ def test_submission_staging_is_offline_and_does_not_modify_task(tmp_path):
     assert config['verifier']['environment']['network_mode'] == 'no-network'
     assert (task / 'task.toml').read_bytes() == original
     assert records[0]['prepared_image'] == config['environment']['docker_image']
+
+
+@pytest.mark.parametrize("patch", [b"", b"diff --git a/source.c b/source.c\n", b"invalid patch\x00\n"])
+def test_scoring_relays_original_submission_even_if_oracle_does_not_apply(tmp_path, qualified_task, patch):
+    task = prepared(tmp_path)
+    qualified_task(task)
+    run = submission(tmp_path)
+    (run / task.name / "submission.patch").write_bytes(patch)
+    target = tmp_path / "staged"
+    stage_submissions(run, task.parent, target)
+    staged = target / task.name
+    config = tomllib.loads((staged / "task.toml").read_text())
+    command = config["verifier"]["collect"][0]["command"]
+    artifacts = tmp_path / "artifacts with spaces"
+    command = command.replace("/solution", shlex.quote(str(staged / "solution")))
+    command = command.replace("/logs/artifacts", shlex.quote(str(artifacts)))
+    # There is no Git repository and no applied oracle patch here. Collection
+    # must still preserve exact submitted bytes, including invalid/empty input.
+    worktree = tmp_path / "unrelated-worktree"
+    worktree.mkdir()
+    (worktree / "source.c").write_text("unrelated mutable content\n")
+    subprocess.run(["bash", "-euc", command], cwd=worktree, check=True)
+    assert (artifacts / "agent.patch").read_bytes() == patch
 
 
 @pytest.mark.parametrize('field', ['tag', 'image_id', 'setup_network', 'verifier_network', 'recipe'])
@@ -116,9 +142,9 @@ def test_native_network_plan_allows_only_agent_api(tmp_path):
     assert plan.verifier_phase.network_mode=='no-network'
 
 
-def test_scoring_result_must_match_submitted_task(tmp_path,monkeypatch):
+def test_scoring_result_must_match_submitted_task(tmp_path,monkeypatch,qualified_task):
     from securevibebench_evaluation import submissions
-    task=prepared(tmp_path);run=submission(tmp_path);output=tmp_path/'score'
+    task=prepared(tmp_path);qualified_task(task);run=submission(tmp_path);output=tmp_path/'score'
     def execute(command,**kwargs):
         result=output/'jobs/evaluation/trial';result.mkdir(parents=True)
         (result/'result.json').write_text(json.dumps({'task_name':'securevibebench-999','verifier_result':{'rewards':{'functional':1,'security':1}}}))
@@ -276,10 +302,11 @@ def test_agent_env_uses_native_references_without_logging_secret(tmp_path, monke
     assert 'test-secret-value' not in (output/'command.json').read_text()
 
 
-def test_offline_scoring_does_not_require_host_dns(tmp_path, monkeypatch):
+def test_offline_scoring_does_not_require_host_dns(tmp_path, monkeypatch, qualified_task):
     from securevibebench_evaluation import images
     monkeypatch.setattr(images, 'configure_dns', lambda *args: (_ for _ in ()).throw(ValueError('no DNS')))
     task = prepared(tmp_path)
+    qualified_task(task)
     stage_task(task, tmp_path / 'offline', scoring=True)
     assert not (tmp_path / 'offline/environment/resolv.conf').exists()
 
@@ -296,3 +323,24 @@ def test_unavailable_task_is_explicit_and_full_stays_runnable(tmp_path):
         select_tasks([unavailable['localid']], task.parent)
     supported = {row['task'] for row in rows if row['status'] == 'supported'}
     assert {path.name for path in select_tasks(['full'], task.parent)} == supported
+
+
+@pytest.mark.parametrize("kind", ["symlink", "oversized"])
+def test_native_packaging_enforces_regular_bounded_patch_input(tmp_path, kind):
+    from securevibebench_evaluation.submissions import package_job
+    trial = tmp_path / "job/trial"
+    artifacts = trial / "artifacts/logs/artifacts"
+    artifacts.mkdir(parents=True)
+    patch = artifacts / "agent.patch"
+    if kind == "symlink":
+        unrelated = tmp_path / "unrelated.txt"
+        unrelated.write_text("unrelated private fixture content\n")
+        patch.symlink_to(unrelated)
+    else:
+        with patch.open("wb") as stream:
+            stream.truncate(32 * 1024 * 1024 + 1)
+    (trial / "result.json").write_text(json.dumps({
+        "task_name": "securevibebench/securevibebench-992", "exception_info": None}))
+    with pytest.raises(ValueError, match="regular collected|exceeds 32 MiB"):
+        package_job(trial.parent, tmp_path / "packaged")
+    assert not (tmp_path / "packaged").exists()

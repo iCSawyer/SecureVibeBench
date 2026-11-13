@@ -1,6 +1,6 @@
 # Prepared ARVO image workflow
 
-Evaluation uses immutable prepared images. It does not build environments or download dependencies. See [the evaluation guide](../../docs/README.md) for user commands.
+Evaluation uses immutable prepared environments. Project code is still compiled inside offline verifier containers; dependencies are not downloaded during trials. See [the evaluation guide](../../docs/README.md) for user commands.
 
 ## Produce an image
 
@@ -22,29 +22,35 @@ ARVO compilation retains the base image's declared working directory. Task funct
 
 A compulsory post-freeze verifier compiles the submitted starting source, runs the PoC and full functional suite, and checks network isolation. The producer does not repeat the same compile/test probe before freezing.
 
-Count-only suites retain their reported counts. The reference must contain positive passes. Submission results must not reduce the pass count or total count, or increase failures or unknowns. These tasks declare `count-results-no-regression-v1`; counts do not identify individual cases. Existing list and Boolean comparisons keep their original rules.
+The existing producer records historical count, list, or Boolean probes as image-preparation evidence. These probes do not qualify a task for the 0.4.0 scorer. Runtime scoring requires a separate `functional-f2p-p2p-v1` contract, a nonempty F2P set, and passing F2P/P2P obligations. There is no fallback to the historical comparisons. See [test qualification](../../docs/README.md#4-maintainer-test-qualification).
 
 The producer uses native Harbor directly to verify an unpublished local image. It does not call the user evaluator or require a registry digest until publication. Failed reference baselines must be investigated; do not change assertions to obtain a successful image.
 
 ## Add images to the runtime catalog
 
-The runtime format contains `instruction.md`, `task.toml`, and `tests/test.sh`. The Dockerfile, installer scripts, and evidence remain in maintainer build inputs and run archives.
+The runtime format contains `instruction.md`, `task.toml`, and a self-contained `tests/` directory with the qualified contract and verifier modules. The Dockerfile, installer scripts, and evidence remain in maintainer build inputs and run archives.
 
 For a completed Public image run:
 
 ```bash
-python tools/arvo_images/catalog.py --run RUN --output data
-securevibebench pull --tasks data --task full
-securevibebench generate --tasks data --task ID --model 'openai/<model>' --local-images --eval
+python tools/arvo_images/catalog.py --run RUN --output runs/exported-tasks
+python tools/functional/qualify.py \
+  --task runs/exported-tasks/securevibebench-ID \
+  --contract /path/to/reviewed-contract \
+  --reference-patch /path/to/private/reference.patch \
+  --output runs/qualification-ID
+securevibebench pull --tasks runs/qualification-ID/tasks --task ID
+securevibebench generate --tasks runs/qualification-ID/tasks --task ID \
+  --model 'openai/<model>' --local-images --eval
 ```
 
-The exporter records each registry digest, expected image ID, platform, baseline hash, and verified native agent. Publish those definitions and the image catalog to HF `full-habour`; do not put the complete dataset in GitHub. Update `evaluation/dataset-lock.json` after verifying the HF commit. The current HF release contains 105 image tasks. The wrapper only accepts declared image tasks and never falls back to a Dockerfile.
+The exporter records each registry digest, expected image ID, platform, baseline hash, and verified native agent. Publish those definitions and the image catalog to HF `full-habour`; do not put the complete dataset in GitHub. Update `evaluation/dataset-lock.json` after verifying the HF commit. The image catalog contains 105 prepared images; `availability.json` records which tasks have accepted scoring contracts. The wrapper only accepts declared image tasks and never falls back to a Dockerfile.
 
 Published offline bundles from earlier batches retain their own framework wheel and importer. Use those frozen bundles as complete archives. The current evaluator consumes the minimal image task format; export a new task root when using an earlier distribution with the current package.
 
 ## Sync the HF staging branch
 
-`full-habour` contains only tasks with published image digests. `availability.json` lists every benchmark ID and marks tasks without images as unsupported. HF README files are not changed by the publisher.
+`full-habour` contains only tasks with published image digests and qualified F2P/P2P contracts. `availability.json` lists every benchmark ID; missing images and missing test qualification are separate unsupported reasons. Resolve every declared excluded test case before export. HF README files are not changed by the publisher.
 
 ```bash
 python tools/publish_dataset.py --source TASK_FILES --catalog IMAGE_CATALOG_JSON \

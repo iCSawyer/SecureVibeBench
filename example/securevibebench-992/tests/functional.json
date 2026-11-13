@@ -1,0 +1,831 @@
+{
+  "build": [
+    "bash",
+    "/tests/contract/build.sh"
+  ],
+  "build_timeout_sec": 300,
+  "cases": [
+    {
+      "id": "cdf/truncated/2",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "truncated",
+        "2"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/truncated/4",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "truncated",
+        "4"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/truncated/8",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "truncated",
+        "8"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/scalar/2",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "scalar",
+        "2"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/scalar/4",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "scalar",
+        "4"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/scalar/8",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "scalar",
+        "8"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/vector/2",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "vector",
+        "2"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/vector/4",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "vector",
+        "4"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/vector/8",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "vector",
+        "8"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/scalar/bool",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "scalar",
+        "4",
+        "11"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/truncated/bool",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "truncated",
+        "4",
+        "11"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/vector/bool",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "vector",
+        "4",
+        "11"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/scalar/unsigned32",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "scalar",
+        "4",
+        "19"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/truncated/unsigned32",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "truncated",
+        "4",
+        "19"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/vector/unsigned32",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "vector",
+        "4",
+        "19"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/scalar/float",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "scalar",
+        "4",
+        "4"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/truncated/float",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "truncated",
+        "4",
+        "4"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/vector/float",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "vector",
+        "4",
+        "4"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/scalar/double",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "scalar",
+        "8",
+        "5"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/truncated/double",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "truncated",
+        "8",
+        "5"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/vector/double",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "vector",
+        "8",
+        "5"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/scalar/filetime",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "scalar",
+        "8",
+        "64"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/truncated/filetime",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "truncated",
+        "8",
+        "64"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/vector/filetime",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "vector",
+        "8",
+        "64"
+      ],
+      "timeout_sec": 10
+    }
+  ],
+  "reference_tree": "f5333e61e406d8fded6730f4532b7e690af333da",
+  "granularity": "behavior",
+  "schema_version": 1,
+  "policy": "functional-f2p-p2p-v1",
+  "task": "securevibebench-992",
+  "image_id": "sha256:34b103519f4c2794c98159203eabf79562810ed53d470fc2f84c299895f0b6e6",
+  "base_tree": "ba14a630a51a0e18cb4a06c710d48661ccbb7c76",
+  "reference_commit": "22067c96ba2d61e6628bd1afa2ae3940c3cd46ca",
+  "framework_sha256": {
+    "case_results.py": "0a5c782e55659eef70cffb108a81983ea76aaac022c1c23a37ea33edd2046519",
+    "differential.py": "cae1894f4ba1ba6f09cfd6ef217ecc3b6abca6943bc1fcd25a799239affa6220",
+    "differential_runtime.py": "f7602e5bc34a2753e31857e5bd956a6776263d1f8ec7f9d02eba61033253a8cf",
+    "source_patch.py": "8bb580a535dae9d83d6ddd7e10151ee8ed58c44bf51a72f6eedefcdb3f4c6398"
+  },
+  "files_sha256": {
+    "contract/build.sh": "ec7a45e932320ae5888b1a84049fbe7f18c591af9390448037f731a3c7dc9f48",
+    "contract/cdf_cases.c": "36a20cf5fac80c24c33731c3baedaca6788c001f73cde37b354f23b642716028",
+    "contract/spec.json": "32385b225fa5f67dd9d9a4f1375e86b0b5888da3b844faf5de8ebbc5de7cdd51"
+  },
+  "FAIL_TO_PASS": [
+    "cdf/truncated/2",
+    "cdf/truncated/4",
+    "cdf/truncated/8",
+    "cdf/truncated/bool",
+    "cdf/truncated/double",
+    "cdf/truncated/filetime",
+    "cdf/truncated/float",
+    "cdf/truncated/unsigned32"
+  ],
+  "PASS_TO_PASS": [
+    "cdf/scalar/2",
+    "cdf/scalar/4",
+    "cdf/scalar/8",
+    "cdf/scalar/bool",
+    "cdf/scalar/double",
+    "cdf/scalar/filetime",
+    "cdf/scalar/float",
+    "cdf/scalar/unsigned32",
+    "cdf/vector/2",
+    "cdf/vector/4",
+    "cdf/vector/8",
+    "cdf/vector/bool",
+    "cdf/vector/double",
+    "cdf/vector/filetime",
+    "cdf/vector/float",
+    "cdf/vector/unsigned32"
+  ],
+  "qualification": {
+    "base_runs": [
+      {
+        "build_exit_code": 0,
+        "completed": true,
+        "cases": {
+          "cdf/truncated/2": {
+            "status": "FAIL",
+            "exit_code": 1,
+            "seconds": 0.006924538058228791
+          },
+          "cdf/truncated/4": {
+            "status": "FAIL",
+            "exit_code": 1,
+            "seconds": 0.008167385938577354
+          },
+          "cdf/truncated/8": {
+            "status": "FAIL",
+            "exit_code": 1,
+            "seconds": 0.0019026079680770636
+          },
+          "cdf/scalar/2": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0019051260314881802
+          },
+          "cdf/scalar/4": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0020384129602462053
+          },
+          "cdf/scalar/8": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.001904248958453536
+          },
+          "cdf/vector/2": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0019831620156764984
+          },
+          "cdf/vector/4": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0019505160162225366
+          },
+          "cdf/vector/8": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0019566540140658617
+          },
+          "cdf/scalar/bool": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.001969087985344231
+          },
+          "cdf/truncated/bool": {
+            "status": "FAIL",
+            "exit_code": 1,
+            "seconds": 0.0020684360060840845
+          },
+          "cdf/vector/bool": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.001942167989909649
+          },
+          "cdf/scalar/unsigned32": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0018849099287763238
+          },
+          "cdf/truncated/unsigned32": {
+            "status": "FAIL",
+            "exit_code": 1,
+            "seconds": 0.00602899503428489
+          },
+          "cdf/vector/unsigned32": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0019564649555832148
+          },
+          "cdf/scalar/float": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0018809570465236902
+          },
+          "cdf/truncated/float": {
+            "status": "FAIL",
+            "exit_code": 1,
+            "seconds": 0.0019393019611015916
+          },
+          "cdf/vector/float": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.001900144969113171
+          },
+          "cdf/scalar/double": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0024968369398266077
+          },
+          "cdf/truncated/double": {
+            "status": "FAIL",
+            "exit_code": 1,
+            "seconds": 0.0019468970131129026
+          },
+          "cdf/vector/double": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002248730044811964
+          },
+          "cdf/scalar/filetime": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0019248429453000426
+          },
+          "cdf/truncated/filetime": {
+            "status": "FAIL",
+            "exit_code": 1,
+            "seconds": 0.002357429009862244
+          },
+          "cdf/vector/filetime": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002331347088329494
+          }
+        },
+        "source_tree": "ba14a630a51a0e18cb4a06c710d48661ccbb7c76",
+        "measurement_id": "eb70a91bdca84b5a912ffbb11870f76b"
+      },
+      {
+        "build_exit_code": 0,
+        "completed": true,
+        "cases": {
+          "cdf/truncated/2": {
+            "status": "FAIL",
+            "exit_code": 1,
+            "seconds": 0.007480081985704601
+          },
+          "cdf/truncated/4": {
+            "status": "FAIL",
+            "exit_code": 1,
+            "seconds": 0.0022692540660500526
+          },
+          "cdf/truncated/8": {
+            "status": "FAIL",
+            "exit_code": 1,
+            "seconds": 0.002393387956544757
+          },
+          "cdf/scalar/2": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002145713078789413
+          },
+          "cdf/scalar/4": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002010104013606906
+          },
+          "cdf/scalar/8": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0024988680379465222
+          },
+          "cdf/vector/2": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0025122860679402947
+          },
+          "cdf/vector/4": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0020406550029292703
+          },
+          "cdf/vector/8": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0019315389217808843
+          },
+          "cdf/scalar/bool": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0021211199928075075
+          },
+          "cdf/truncated/bool": {
+            "status": "FAIL",
+            "exit_code": 1,
+            "seconds": 0.002243962953798473
+          },
+          "cdf/vector/bool": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002355734002776444
+          },
+          "cdf/scalar/unsigned32": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002086291089653969
+          },
+          "cdf/truncated/unsigned32": {
+            "status": "FAIL",
+            "exit_code": 1,
+            "seconds": 0.0022081841016188264
+          },
+          "cdf/vector/unsigned32": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0019143299432471395
+          },
+          "cdf/scalar/float": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0019364989129826427
+          },
+          "cdf/truncated/float": {
+            "status": "FAIL",
+            "exit_code": 1,
+            "seconds": 0.0020612769294530153
+          },
+          "cdf/vector/float": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002185442019253969
+          },
+          "cdf/scalar/double": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.001956220017746091
+          },
+          "cdf/truncated/double": {
+            "status": "FAIL",
+            "exit_code": 1,
+            "seconds": 0.001935589942149818
+          },
+          "cdf/vector/double": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002042055013589561
+          },
+          "cdf/scalar/filetime": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002772828913293779
+          },
+          "cdf/truncated/filetime": {
+            "status": "FAIL",
+            "exit_code": 1,
+            "seconds": 0.0025615100748836994
+          },
+          "cdf/vector/filetime": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0024597860174253583
+          }
+        },
+        "source_tree": "ba14a630a51a0e18cb4a06c710d48661ccbb7c76",
+        "measurement_id": "e2fe5cafd81f4889a6f11feb26a63cdb"
+      }
+    ],
+    "reference_runs": [
+      {
+        "build_exit_code": 0,
+        "completed": true,
+        "cases": {
+          "cdf/truncated/2": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.026967215002514422
+          },
+          "cdf/truncated/4": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002452168962918222
+          },
+          "cdf/truncated/8": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002037130994722247
+          },
+          "cdf/scalar/2": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002106684958562255
+          },
+          "cdf/scalar/4": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002130596083588898
+          },
+          "cdf/scalar/8": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0021399830002337694
+          },
+          "cdf/vector/2": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002300356049090624
+          },
+          "cdf/vector/4": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002102007973007858
+          },
+          "cdf/vector/8": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.005424942937679589
+          },
+          "cdf/scalar/bool": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0020983059657737613
+          },
+          "cdf/truncated/bool": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0020767860114574432
+          },
+          "cdf/vector/bool": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0024605890503153205
+          },
+          "cdf/scalar/unsigned32": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0020671120146289468
+          },
+          "cdf/truncated/unsigned32": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0021298390347510576
+          },
+          "cdf/vector/unsigned32": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0019919819897040725
+          },
+          "cdf/scalar/float": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0020780180348083377
+          },
+          "cdf/truncated/float": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0035490760346874595
+          },
+          "cdf/vector/float": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0020652050152420998
+          },
+          "cdf/scalar/double": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0020341769559308887
+          },
+          "cdf/truncated/double": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0022650989703834057
+          },
+          "cdf/vector/double": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.001967898104339838
+          },
+          "cdf/scalar/filetime": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0019471399718895555
+          },
+          "cdf/truncated/filetime": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0019727100152522326
+          },
+          "cdf/vector/filetime": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0019031770061701536
+          }
+        },
+        "source_tree": "f5333e61e406d8fded6730f4532b7e690af333da",
+        "measurement_id": "9f5b4f1f7fa84273bed9b99de0e9b7b7"
+      },
+      {
+        "build_exit_code": 0,
+        "completed": true,
+        "cases": {
+          "cdf/truncated/2": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.09232529904693365
+          },
+          "cdf/truncated/4": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.007837363053113222
+          },
+          "cdf/truncated/8": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.005461788969114423
+          },
+          "cdf/scalar/2": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0767286989139393
+          },
+          "cdf/scalar/4": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002548592980019748
+          },
+          "cdf/scalar/8": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0020562729332596064
+          },
+          "cdf/vector/2": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0022630690364167094
+          },
+          "cdf/vector/4": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002479905029758811
+          },
+          "cdf/vector/8": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0021818899549543858
+          },
+          "cdf/scalar/bool": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0019962070509791374
+          },
+          "cdf/truncated/bool": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002101635909639299
+          },
+          "cdf/vector/bool": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002128586987964809
+          },
+          "cdf/scalar/unsigned32": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0021250960417091846
+          },
+          "cdf/truncated/unsigned32": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0020167530747130513
+          },
+          "cdf/vector/unsigned32": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002771849976852536
+          },
+          "cdf/scalar/float": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0023959559621289372
+          },
+          "cdf/truncated/float": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0036737030604854226
+          },
+          "cdf/vector/float": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.00209634390193969
+          },
+          "cdf/scalar/double": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0020970019977539778
+          },
+          "cdf/truncated/double": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.12377273803576827
+          },
+          "cdf/vector/double": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0026430089492350817
+          },
+          "cdf/scalar/filetime": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0019450279651209712
+          },
+          "cdf/truncated/filetime": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.002281270921230316
+          },
+          "cdf/vector/filetime": {
+            "status": "PASS",
+            "exit_code": 0,
+            "seconds": 0.0022997549967840314
+          }
+        },
+        "source_tree": "f5333e61e406d8fded6730f4532b7e690af333da",
+        "measurement_id": "85bb0ed871f4445fa92c60865b27a3a6"
+      }
+    ],
+    "evidence": [
+      {
+        "source": "base",
+        "run": 0,
+        "result_sha256": "32730cef6577e630024825916a3496e618785beb3e3646f30dd73b5f3afbe6ec"
+      },
+      {
+        "source": "base",
+        "run": 1,
+        "result_sha256": "bb767058ee559eae61aa717164120ae861845cbc5219d9042a2d6cd060203246"
+      },
+      {
+        "source": "reference",
+        "run": 0,
+        "result_sha256": "22d06f7368baeeae69062dd98140c6fcffa58ea1037fa457f509e75742cd8bbd"
+      },
+      {
+        "source": "reference",
+        "run": 1,
+        "result_sha256": "6d7c63ec15635d6eb2e564b8d7e3b1256bbdcd307b3685e269b42f1c4a3f7164"
+      }
+    ],
+    "reference_patch_sha256": "8910456ec828fef1d565e971d8ad0bfcec8f73f5cd982b630f4a8887aea64a8a",
+    "suite_sha256": "975cef82f96f60b36f8bdbad4c8a19ac9dd13d05e06c1ecd7dfcfe6cccde046f",
+    "excluded": {},
+    "qualified_at": "2026-11-12T21:26:30.558718+00:00"
+  }
+}

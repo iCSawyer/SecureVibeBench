@@ -62,9 +62,15 @@ def task_statuses(root=None):
     for path in candidates:
         if path.is_file():
             records = json.loads(path.read_text())["tasks"]
-            return records
+            from .functional import scoring_status
+            return [{**item, **scoring_status(root / item["task"])}
+                    if "task" in item and (root / item["task"] / "task.toml").is_file() else item
+                    for item in records]
+    from .functional import scoring_status
+
     return [
         {
+            **scoring_status(path.parent),
             "task": path.parent.name,
             "localid": path.parent.name.removeprefix("securevibebench-"),
             "status": "supported",
@@ -106,8 +112,9 @@ def select_tasks(values=None, root=None):
             )
             if status and status["status"] == "unsupported":
                 raise ValueError(
-                    "Task temporarily unsupported (no prepared image digest): "
-                    + path.name
+                    "Task temporarily unsupported ("
+                    + status.get("message", status.get("reason", "not qualified"))
+                    + "): " + path.name
                 )
             raise ValueError("No prepared image task: " + path.name)
         read_task(path)
@@ -247,9 +254,15 @@ def acquire(tasks, logs, *, local_only=False, agent=None):
 
 def stage_task(task, destination, *, scoring=False, allow_hosts=()):
     config = read_task(task)
+    if scoring:
+        from .functional import require_contract
+        require_contract(task, config)
     destination.mkdir(parents=True, exist_ok=False)
     shutil.copy2(task / "instruction.md", destination / "instruction.md")
     shutil.copytree(task / "tests", destination / "tests")
+    if scoring:
+        from .functional import stage_verifier
+        stage_verifier(destination)
     # Docker already verified the registry digest and config ID in acquire().
     # The local ID prevents Harbor or Compose from pulling during execution.
     config["environment"]["docker_image"] = config["metadata"]["image"]["id"]

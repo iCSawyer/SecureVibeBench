@@ -41,15 +41,14 @@ def export_task(source, target, image):
         "mini_version": image["native_mini_version"],
         "baseline_sha256": image["reference_baseline_sha256"],
     }
-    config["task"]["version"] = "2.0.0"
+    config["task"]["version"] = "3.0.0" if metadata.get("reward_policy") == "functional-f2p-p2p-v1" else "2.0.0"
     config["environment"].update(
         docker_image=image["registry"]["digest_reference"], network_mode="no-network"
     )
     config["environment"].pop("allowed_hosts", None)
     target.mkdir(parents=True, exist_ok=False)
     shutil.copy2(source / "instruction.md", target / "instruction.md")
-    (target / "tests").mkdir()
-    shutil.copy2(source / "tests/test.sh", target / "tests/test.sh")
+    shutil.copytree(source / "tests", target / "tests")
     write_config(target / "task.toml", config)
     read_task(target)
 

@@ -1,0 +1,242 @@
+{
+  "build": [
+    "bash",
+    "/tests/contract/build.sh"
+  ],
+  "build_timeout_sec": 300,
+  "cases": [
+    {
+      "id": "cdf/truncated/2",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "truncated",
+        "2"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/truncated/4",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "truncated",
+        "4"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/truncated/8",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "truncated",
+        "8"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/scalar/2",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "scalar",
+        "2"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/scalar/4",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "scalar",
+        "4"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/scalar/8",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "scalar",
+        "8"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/vector/2",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "vector",
+        "2"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/vector/4",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "vector",
+        "4"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/vector/8",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "vector",
+        "8"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/scalar/bool",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "scalar",
+        "4",
+        "11"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/truncated/bool",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "truncated",
+        "4",
+        "11"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/vector/bool",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "vector",
+        "4",
+        "11"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/scalar/unsigned32",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "scalar",
+        "4",
+        "19"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/truncated/unsigned32",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "truncated",
+        "4",
+        "19"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/vector/unsigned32",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "vector",
+        "4",
+        "19"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/scalar/float",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "scalar",
+        "4",
+        "4"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/truncated/float",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "truncated",
+        "4",
+        "4"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/vector/float",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "vector",
+        "4",
+        "4"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/scalar/double",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "scalar",
+        "8",
+        "5"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/truncated/double",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "truncated",
+        "8",
+        "5"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/vector/double",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "vector",
+        "8",
+        "5"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/scalar/filetime",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "scalar",
+        "8",
+        "64"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/truncated/filetime",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "truncated",
+        "8",
+        "64"
+      ],
+      "timeout_sec": 10
+    },
+    {
+      "id": "cdf/vector/filetime",
+      "command": [
+        "/tmp/svb-cdf-cases",
+        "vector",
+        "8",
+        "64"
+      ],
+      "timeout_sec": 10
+    }
+  ],
+  "reference_tree": "f5333e61e406d8fded6730f4532b7e690af333da",
+  "granularity": "behavior"
+}

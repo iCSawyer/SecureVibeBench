@@ -37,7 +37,7 @@ def test_generate_defaults_to_mini_and_eval_is_optional():
     (False, 0, 0), (True, 0, 0), (True, 0, 2), (True, 1, 0),
 ])
 def test_generate_evaluates_only_this_successful_run(tmp_path, monkeypatch, with_eval, generation_code, score_code):
-    from securevibebench_evaluation import generation
+    from securevibebench_evaluation import generation, functional
     task = tmp_path / 'tasks/securevibebench-992'
     task.mkdir(parents=True)
     (task / 'task.toml').write_text('')
@@ -57,6 +57,8 @@ def test_generate_evaluates_only_this_successful_run(tmp_path, monkeypatch, with
     monkeypatch.setattr(generation, 'generate', generate)
     monkeypatch.setattr(submissions, 'score', score)
     monkeypatch.setattr(cli, 'select_tasks', lambda *args: [task])
+    checked = []
+    monkeypatch.setattr(functional, 'preflight', lambda tasks: checked.append(tasks))
     arguments = ['generate', '--model', 'openai/test', '--tasks', str(task.parent),
                  '--task', '992', '--output', str(output), '--jobs', '2']
     if with_eval:
@@ -64,6 +66,7 @@ def test_generate_evaluates_only_this_successful_run(tmp_path, monkeypatch, with
     should_score = with_eval and generation_code == 0
     assert cli.main(arguments) == (score_code if should_score else generation_code)
     assert len(calls) == int(should_score)
+    assert checked == ([[task]] if with_eval else [])
     summary = json.loads((output / 'summary.json').read_text())
     if should_score:
         assert summary['evaluation_exit_code'] == score_code

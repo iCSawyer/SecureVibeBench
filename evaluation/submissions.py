@@ -36,7 +36,8 @@ def submission_tasks(run: Path):
 def stage_submissions(run: Path, tasks: Path, destination: Path):
     found = submission_tasks(run)
     for name, _ in found:
-        read_task(tasks / name)
+        from .functional import require_contract
+        require_contract(tasks / name, read_task(tasks / name))
     destination.mkdir(parents=True, exist_ok=False)
     records = []
     for name, patch in found:
@@ -45,16 +46,10 @@ def stage_submissions(run: Path, tasks: Path, destination: Path):
         config = stage_task(source, target, scoring=True)
         # Submission scoring performs no API connectivity check or agent execution.
         repo = shlex.quote(config["metadata"]["repo_cwd"])
-        base = shlex.quote("svb-start")
         config["verifier"]["collect"] = [
             {
-                "command": "mkdir -p /logs/artifacts && git -C "
-                + repo
-                + " add -N . && git -C "
-                + repo
-                + " diff --binary "
-                + base
-                + " -- . > /logs/artifacts/agent.patch"
+                "command": "mkdir -p /logs/artifacts && "
+                "cp /solution/submission.patch /logs/artifacts/agent.patch"
             }
         ]
         write_config(target / "task.toml", config)
@@ -71,6 +66,10 @@ def stage_submissions(run: Path, tasks: Path, destination: Path):
                 "task": name,
                 "patch_sha256": hashlib.sha256(patch.read_bytes()).hexdigest(),
                 "prepared_image": config["environment"]["docker_image"],
+                "scoring_policy": config["metadata"]["reward_policy"],
+                "functional_contract_sha256": hashlib.sha256(
+                    (source / "tests/functional.json").read_bytes()
+                ).hexdigest(),
             }
         )
     (destination.parent / "submission-manifest.json").write_text(
@@ -123,6 +122,15 @@ def score(run: Path, tasks: Path, output: Path, jobs: int = 1, *, local_only=Fal
         run = source
     found = submission_tasks(run)
     selected = select_tasks([name for name, _ in found], tasks)
+    from .functional import preflight
+    try:
+        contracts = preflight(selected)
+    except (OSError, ValueError) as error:
+        (output / "preflight.json").write_text(json.dumps(
+            {"state": "needs-qualification", "reason": str(error)}, indent=2) + "\n")
+        raise
+    (output / "preflight.json").write_text(json.dumps(
+        {"state": "qualified", "tasks": [item["task"] for item in contracts]}, indent=2) + "\n")
     acquire(selected, output / "images", local_only=local_only)
     inputs = output / "inputs"
     records = stage_submissions(run, tasks, inputs)
@@ -171,6 +179,7 @@ def score(run: Path, tasks: Path, output: Path, jobs: int = 1, *, local_only=Fal
         "harbor_exit_code": result.returncode,
         "results": results,
         "network": "no-network",
+        "scoring_policy": "functional-f2p-p2p-v1",
     }
     (output / "eval.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(json.dumps(summary, indent=2))
@@ -195,8 +204,10 @@ def package_job(job: Path, destination: Path):
         if result.get("exception_info") or agent_backend_error(result_path.parent):
             raise ValueError("Cannot package an unsuccessful agent trial: " + name)
         patch = result_path.parent / "artifacts/logs/artifacts/agent.patch"
-        if not patch.is_file():
-            raise ValueError("Missing collected source patch: " + name)
+        if not patch.is_file() or patch.is_symlink():
+            raise ValueError("Missing regular collected source patch: " + name)
+        if patch.stat().st_size > 32 * 1024 * 1024:
+            raise ValueError("Collected source patch exceeds 32 MiB: " + name)
         records.append((name, patch, result_path))
     if not records or len({name for name, _, _ in records}) != len(records):
         raise ValueError("Select completed trials with one attempt per task")
