@@ -2,6 +2,7 @@
 
 ## 0.4.0 — F2P/P2P scoring (unreleased, `habour` branch)
 
+- Synchronize HF `full-habour` to all 105 qualified tasks: 798 F2P cases, 843 P2P cases, and 420 independent offline measurements. Verify anonymous access to all task-image digests; retain the existing task and network images.
 - Replace the active Boolean, pass-list, and count-based functional scorers with `functional-f2p-p2p-v1`. Historical scores are not directly comparable.
 - Require a nonempty F2P set and actual PASS for every F2P/P2P case in one complete candidate run. Missing, skipped, duplicate, or errored required cases cannot pass.
 - Qualify each task with at least four independent offline measurements: two starting-source runs and two functional-reference runs. Bind evidence to the prepared image, actual source trees, test assets, case IDs, and verifier hashes.
@@ -14,6 +15,7 @@
 - Keep qualified task data on HF `full-habour`, one example in GitHub, and maintainer qualification evidence and agent trajectories under `runs/`. P2P represents task acceptance coverage, not every upstream test.
 - Reject publication of declared cases excluded from F2P/P2P. Retain evidence for corrected test fixtures, task statements, and functional reference defects; keep the original VIC as provenance.
 - Add resumable maintainer author/reviewer/qualification tools with input checks, contract-bound reviews, recorded quota waits, and retained execution logs.
+- Document the seven task IDs with recorded statement clarifications or corrections; preserve original/revised statement diffs with the qualification evidence.
 
 The notes below describe earlier development states. Their former runtime preparation and scoring behavior do not apply to the 0.4.0 workflow.
 

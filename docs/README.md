@@ -1,6 +1,6 @@
 # Native Harbor evaluation
 
-The `habour` branch is experimental and has not been formally released. Version 0.4.0 uses the `functional-f2p-p2p-v1` scoring protocol. The image catalog contains 105 prepared task images. A prepared image alone does not make a task scorable: the task also needs a qualified functional test contract. Check the selected release with `securevibebench list` instead of assuming that all images are ready for scoring.
+The `habour` branch is experimental and has not been formally released. Version 0.4.0 uses the `functional-f2p-p2p-v1` scoring protocol. The pinned HF release contains 105 qualified tasks and 105 prepared task images, with 798 F2P cases and 843 P2P cases. Its qualification evidence contains 420 independent offline measurements. A prepared image alone does not make a task scorable: the task also needs a qualified functional test contract. Check the selected release with `securevibebench list` instead of assuming that all images are ready for scoring.
 
 ## 1. Environment installation
 
@@ -131,7 +131,7 @@ securevibebench generate --model 'openai/<model>' --task full --jobs 2 --eval
 
 The IDs above illustrate selection syntax; check their availability in your pinned release. `--task` also accepts repeated flags and full task names such as `securevibebench-992`. Use `full` alone. Omission of `--task` selects all task directories in the selected root. The default HF root contains the qualified subset. `--tasks example --task full` selects the single example. A custom root containing unqualified tasks fails the `--eval` preflight; tasks are not silently skipped.
 
-`--jobs` controls native Harbor trial concurrency. CPU and memory budgets are set in each task definition. Add `--local-images` after caching data and images to prevent acquisition traffic.
+`--jobs` controls native Harbor trial concurrency. CPU and memory budgets are set in each task definition; the current tasks request 3–8 CPUs and 8–32 GiB per trial. Check these limits before selecting concurrency; use `--jobs 1` for sequential execution. Prepared images include the dependencies, but scoring still compiles changed source. Large C++ projects can take several minutes. Add `--local-images` after caching data and images to prevent acquisition traffic.
 
 ### Agent and model configuration
 
@@ -282,6 +282,8 @@ python tools/functional/qualify.py \
 
 Use a new output directory. The tool stages a copy of the task, pins the suite and current framework, and runs at least two fresh offline containers per source state. The reference patch is mounted only in reference runs. Source identities come from the actual prepared image and applied reference patch, not from the original repository's raw commit tree. Prepared snapshots may include dependency or submodule preparation changes.
 
+The host package uses Python 3.12+. An image can contain older system Python, CMake, and project APIs. Use `/opt/svb/python/bin/python3` for standalone standard-library test drivers. Check the actual image headers and tool versions before selecting APIs or build flags. Allow enough time for a full offline build; a timeout is an infrastructure failure, not an F2P assertion.
+
 The output contains `tasks/securevibebench-ID/`, `qualification.json`, and `evidence/base-0`, `base-1`, `reference-0`, and `reference-1`. Each measurement retains its Docker command, container log and exit code, build/case logs and exit codes, network probe, and `measure.json`. Old staged contracts are archived before replacement. Keep failed qualification directories as well as accepted evidence.
 
 ### Author and independently review a batch
@@ -341,5 +343,18 @@ python -m tools.functional.reference \
 This offline tool snapshots the input patches and rationale, then applies those snapshots in a private Git index of the immutable starting image. It records the original reference tree, corrected tree, patch hashes, original VIC, and rationale hash. Set the draft's `reference_tree` to that actual corrected tree and retain `reference_provenance` in the contract. Qualify again with the combined `reference.patch`. Keep private solution patches and source context in maintainer records; publish only the task, tests, and relevant provenance. The original VIC is an origin identifier when a correction is recorded, not a claim that its raw tree is the final reference.
 
 The progress tool reads `repairs/ID/qualification*/tasks/` as well as batch evidence. A `qualification-holds.json` record can restrict a task to an audited repair directory. The publisher requires every declared case to belong to F2P or P2P; an unresolved fail-to-fail or unstable case cannot silently disappear from the exported acceptance set.
+
+The version 3 task statements include these recorded clarifications or corrections. They are part of the new evaluation protocol:
+
+| Task | Requirement change |
+| --- | --- |
+| 58660, 58671 | Coverage glyph IDs are unique; unordered input means a descending pair. Duplicate glyph IDs are outside this serializer contract. |
+| 62822 | A bare Ruby `B`/`b` directive defaults to one bit; `*` selects the complete input. |
+| 63587 | Use the eGK fallback when CIA selection fails. After CIA selection succeeds, retain errors from tokeninfo reading, parsing, and validation. |
+| 39699 | Skip TACACS+ arguments without `=` or `*`; retain raw fallback for unknown named attributes. |
+| 56455 | Permit a new or reused valid subset input for the second call, respecting the helper's ownership contract. |
+| 58626 | Specify the const public `get_glyph_props` forwarding API; internal cache and context member names remain unrestricted. |
+
+Original and revised statements, diffs, source/specification evidence, and review decisions remain in the maintainer run records. These revisions are another reason to keep version 3 scores separate from historical results.
 
 The progress tool marks a publication complete only when its task fingerprints match the currently accepted tasks. Each fingerprint binds `task.toml`, `instruction.md`, and `tests/functional.json`; the latter binds test assets and verifier hashes. A same-size older publication does not complete a revised task set. Candidates outside the selected inventory do not count toward completion.

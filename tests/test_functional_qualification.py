@@ -151,3 +151,22 @@ def test_failed_fresh_measurement_does_not_retain_supplied_historical_proof(tria
     assert len(trial.runs) == 1
     spec = assert_unqualified(trial)
     assert not {'qualification', 'FAIL_TO_PASS', 'PASS_TO_PASS'} & spec.keys()
+
+
+@pytest.mark.parametrize('exit_code', [1, 124, 137])
+def test_build_failure_feedback_includes_real_exit_code_and_log_path(trial, monkeypatch, exit_code):
+    original = qualification.subprocess.run
+    def failed(command, **kwargs):
+        result = original(command, **kwargs)
+        row = trial.runs[-1]
+        row['result'].update(build_exit_code=exit_code, completed=False)
+        (row['directory'] / 'measure.json').write_text(json.dumps(row['result']))
+        return result
+    monkeypatch.setattr(qualification.subprocess, 'run', failed)
+    with pytest.raises(RuntimeError) as error:
+        perform(trial)
+    assert 'build_exit_code=' + str(exit_code) in str(error.value)
+    assert 'completed=False' in str(error.value)
+    assert str(trial.output / 'evidence/base-0') in str(error.value)
+    assert len(trial.runs) == 1
+    assert_unqualified(trial)

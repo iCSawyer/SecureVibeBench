@@ -53,7 +53,7 @@ pip install -e .
 
 This editable install uses the local source code. Use `pip install .` for a regular install. uv is optional: `uv sync --locked`.
 
-Installation downloads and verifies the pinned HF `full-habour` task release and caches it locally. Regular wheels also include this snapshot. The release contains the qualified task subset; `availability.json` records the remaining tasks. GitHub keeps one task in `example/`. The GHCR images are public; no GitHub login or package token is required. See [offline runs](docs/README.md#image-access-and-offline-runs).
+Installation downloads and verifies the pinned HF `full-habour` task release and caches it locally. Regular wheels also include this snapshot. The pinned release contains all 105 qualified tasks; `availability.json` records their image and scoring status. GitHub keeps one task in `example/`. The GHCR images are public; no GitHub login or package token is required. See [offline runs](docs/README.md#image-access-and-offline-runs).
 
 ```bash
 securevibebench list

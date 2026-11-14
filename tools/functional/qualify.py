@@ -109,8 +109,11 @@ def qualify(task, contract, reference_patch, output, repeats=2):
                 result = json.loads((directory / "measure.json").read_text())
             except (OSError, ValueError) as error:
                 raise RuntimeError("Missing or invalid measurement; see " + str(directory)) from error
-            if not isinstance(result, dict) or result.get("build_exit_code") != 0 or result.get("completed") is not True:
-                raise RuntimeError("Test suite did not build and finish; see " + str(directory))
+            if not isinstance(result, dict):
+                raise RuntimeError("Measurement is not an object; see " + str(directory))
+            if result.get("build_exit_code") != 0 or result.get("completed") is not True:
+                raise RuntimeError("Test suite did not build and finish (build_exit_code=%r, completed=%r); see %s"
+                                   % (result.get("build_exit_code"), result.get("completed"), directory))
             require_case_outcomes(result, spec, source, directory)
             proof[source + "_runs"].append(result)
             proof["evidence"].append({"source": source, "run": index,
